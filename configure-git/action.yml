@@ -1,0 +1,26 @@
+name: "Configure Git"
+description: "A GitHub action to configure git for making changes to my repositories."
+author: "Fardjad Davari"
+inputs:
+  username:
+    description: "The username to use for configuring git."
+    default: "github-actions[bot]"
+  email:
+    description: "The email to use for configuring git."
+    default: "github-actions[bot]@users.noreply.github.com"
+outputs: {}
+runs:
+  using: "composite"
+  steps:
+    - id: configure-git
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        git config --local user.name "${{ inputs.username }}"
+        git config --local user.email "${{ inputs.email }}"
+
+        git config --local pull.rebase true
+
+        # work around "insufficient permission for adding an object to repository database .git/object" issue
+        sudo chmod -R ugo+rwX .git

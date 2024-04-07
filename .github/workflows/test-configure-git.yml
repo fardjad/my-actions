@@ -1,0 +1,28 @@
+name: test-configure-git
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "configure-git/**"
+
+env:
+  TEST_NAME: "Test User"
+  TEST_EMAIL: "test@domain.tld"
+
+jobs:
+  test-configure-git:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: fardjad/my-actions/configure-git@main
+        with:
+          username: "${{ env.TEST_NAME }}"
+          email: "${{ env.TEST_EMAIL }}"
+
+      - name: test-configure-git
+        run: |
+          set -euxo pipefail
+
+          [ "$(git config --get user.name)" == "${TEST_NAME}" ] || exit 1
+          [ "$(git config --get user.email)" == "${TEST_EMAIL}" ] || exit 1
