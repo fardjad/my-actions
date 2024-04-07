@@ -1,0 +1,61 @@
+name: test-merge-commits
+
+on:
+  workflow_dispatch: {}
+
+env:
+  TEST_SOURCE_BRANCH: test-source-branch
+  TEST_TARGET_BRANCH: test-target-branch
+  TEST_PR_TITLE: test-merge-commits
+
+jobs:
+  test-merge-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: fardjad/my-actions/configure-git@main
+      - id: create-branches
+        run: |
+          set -euxo pipefail
+
+          git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
+          git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true
+
+          git reset --hard HEAD
+          git checkout main
+
+          git checkout -b "${{ env.TEST_TARGET_BRANCH }}"
+          git push origin "${{ env.TEST_TARGET_BRANCH }}"
+
+          git checkout -b "${{ env.TEST_SOURCE_BRANCH }}"
+          touch test-file
+          git add test-file
+          git commit -m "${{ env.TEST_PR_TITLE }}"
+
+          COMMIT_SHA=$(git rev-parse HEAD)
+          echo "commit-sha=${COMMIT_SHA}" >> "${GITHUB_OUTPUT}"
+      - uses: fardjad/my-actions/merge-commits@main
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          source-branch: "${{ env.TEST_SOURCE_BRANCH }}"
+          target-branch: "${{ env.TEST_TARGET_BRANCH }}"
+          pr-title: "${{ env.TEST_PR_TITLE }}"
+      - name: test-merge-commits
+        run: |
+          set -euxo pipefail
+
+          git checkout "${{ env.TEST_TARGET_BRANCH }}"
+          git pull origin "${{ env.TEST_TARGET_BRANCH }}"
+
+          LAST_COMMIT_MESSAGE="$(git log -1 --pretty=%B)"
+
+          [ "${LAST_COMMIT_MESSAGE}" = "${{ env.TEST_PR_TITLE }}" ] || exit 1
+      - name: cleanup
+        run: |
+          set -euxo pipefail
+
+          git checkout main
+          git branch -D "${{ env.TEST_SOURCE_BRANCH }}"
+          git branch -D "${{ env.TEST_TARGET_BRANCH }}"
+          git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}"
+          git push origin --delete "${{ env.TEST_TARGET_BRANCH }}"
