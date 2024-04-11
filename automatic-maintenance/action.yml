@@ -7,10 +7,12 @@ inputs:
     default: ".github/automatic-maintenance"
     # what's expected in the base-path
     # - check -> Check if the repository needs maintenance. If so, it should exit with a non-zero status code.
-    # - action -> Perform the maintenance tasks
-    # - commit -> Commit the desired changes (first line is the title, second line should always be empty, and the rest is the body).
+    # - action -> Perform the maintenance tasks, create a branch, and commit the changes.
   github-token:
     description: "The GitHub PAT to use for creating, approving, and merging the PR with the changes."
+  target-branch:
+    description: "The branch to merge the changes into."
+    default: "main"
 outputs:
   maintenance-needed:
     description: "A boolean indicating whether the repository needed maintenance."
@@ -21,44 +23,27 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - id: setup-git
-      shell: bash
-      run: |
-        git config --local user.name "github-actions[bot]"
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local pull.rebase true
-
-        # work around "insufficient permission for adding an object to repository database .git/object" issue
-        sudo chmod -R ugo+rwX .git
-    - id: execute
+    - uses: fardjad/my-actions/configure-git@main
+    - id: check
       shell: bash
       run: |
         set -x
 
-        if ./${SCRIPT_BASE_PATH}/check; then
+        if ./${{ inputs.script-base-path }}/check; then
           echo "maintenance-needed=false" >> $GITHUB_OUTPUT
           exit 0
         fi
 
         echo "maintenance-needed=true" >> $GITHUB_OUTPUT
-
-        REMOTE_REPO="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-        CURRENT_BRANCH="$(git branch --show-current)"
-        NEW_BRANCH="automatic-maintenance-$(git rev-parse --short HEAD)"
-        git pull "${REMOTE_REPO}" "${CURRENT_BRANCH}"
-        git checkout -b "${NEW_BRANCH}"
-
-        if ! ./${SCRIPT_BASE_PATH}/action; then
-          echo "::error::Failed to run the action script."
-          exit 1
-        fi
+    - id: action
+      if: steps.check.outputs.maintenance-needed
+      shell: bash
+      run: |
+        set -euo pipefail
 
         PREVIOUS_COMMIT_HASH="$(git rev-parse HEAD)"
 
-        if ! ./${SCRIPT_BASE_PATH}/commit; then
-          echo "::error:: Failed to run the commit script."
-          exit 1
-        fi
+        ./${{ inputs.script-base-path }}/action
 
         CURRENT_COMMIT_HASH="$(git rev-parse HEAD)"
 
@@ -67,31 +52,21 @@ runs:
           exit 0
         fi
 
+        echo "should-merge=true" >> $GITHUB_OUTPUT
+
         COMMIT_MESSAGE="$(git log -1 --pretty=format:%B)"
-
-        echo "commit-message=${COMMIT_MESSAGE}" >> $GITHUB_OUTPUT
-
         TITLE="$(echo "$COMMIT_MESSAGE" | head -n 1)"
         BODY="$(echo "$COMMIT_MESSAGE" | tail -n +3)"
 
-        if git ls-remote --exit-code --heads "${REMOTE_REPO}" "${NEW_BRANCH}" > /dev/null; then
-          echo "::warning:: PR already exists."
-          exit 0
-        fi
-
-        git push "${REMOTE_REPO}" "HEAD:${NEW_BRANCH}"
-
-        PR_URL=$(gh pr create -B "${CURRENT_BRANCH}" -H "${NEW_BRANCH}" -f)
-        echo "pr-url=${PR_URL}" >> $GITHUB_OUTPUT
-      env:
-        SCRIPT_BASE_PATH: ${{ inputs.script-base-path }}
-        GH_TOKEN: ${{ github.token }}
-    - id: approve-and-merge-pr
-      if: steps.execute.outputs.pr-url
-      shell: bash
-      run: |
-        gh pr review --approve "${PR_URL}"
-        gh pr merge --auto --delete-branch --rebase "${PR_URL}"
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}
-        PR_URL: ${{ steps.execute.outputs.pr-url }}
+        echo "pr-title=$TITLE" >> $GITHUB_OUTPUT
+        echo "pr-body=$BODY" >> $GITHUB_OUTPUT
+        echo "source-branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
+    - id: merge
+      if: steps.action.outputs.should-merge
+      uses: fardjad/my-actions/merge-commits@main
+      with:
+        github-token: ${{ inputs.github-token }}
+        source-branch: "${{ steps.action.outputs.source-branch }}"
+        target-branch: "${{ inputs.target-branch }}"
+        pr-title: "${{ steps.action.outputs.pr-title }}"
+        pr-body: "${{ steps.action.outputs.pr-body }}"

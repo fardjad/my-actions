@@ -1,0 +1,8 @@
+#/usr/bin/env bash
+
+git checkout -b "${TEST_SOURCE_BRANCH}"
+
+touch test-automatic-maintenance
+
+git add test-automatic-maintenance
+git commit -m "${TEST_PR_TITLE}"
