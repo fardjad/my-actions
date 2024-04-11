@@ -27,8 +27,6 @@ runs:
     - id: check
       shell: bash
       run: |
-        set -x
-
         if ./${{ inputs.script-base-path }}/check; then
           echo "maintenance-needed=false" >> $GITHUB_OUTPUT
           exit 0
@@ -39,7 +37,7 @@ runs:
       if: steps.check.outputs.maintenance-needed
       shell: bash
       run: |
-        set -euxo pipefail
+        set -euo pipefail
 
         PREVIOUS_COMMIT_HASH="$(git rev-parse HEAD)"
 

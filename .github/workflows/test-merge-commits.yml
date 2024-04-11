@@ -19,7 +19,7 @@ jobs:
       - uses: fardjad/my-actions/configure-git@main
       - name: reset-branches
         run: |
-          set -euxo pipefail
+          set -euo pipefail
 
           git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
           git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true
@@ -27,7 +27,7 @@ jobs:
           git checkout main
       - id: create-branches
         run: |
-          set -euxo pipefail
+          set -euo pipefail
 
           git checkout -b "${{ env.TEST_TARGET_BRANCH }}"
           git push origin "${{ env.TEST_TARGET_BRANCH }}"
@@ -47,7 +47,7 @@ jobs:
           pr-title: "${{ env.TEST_PR_TITLE }}"
       - name: test-merge-commits
         run: |
-          set -euxo pipefail
+          set -euo pipefail
 
           git checkout "${{ env.TEST_TARGET_BRANCH }}"
           git pull origin "${{ env.TEST_TARGET_BRANCH }}"
@@ -57,7 +57,7 @@ jobs:
           [ "${LAST_COMMIT_MESSAGE}" = "${{ env.TEST_PR_TITLE }}" ] || exit 1
       - name: cleanup
         run: |
-          set -euxo pipefail
+          set -euo pipefail
 
           git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
           git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true

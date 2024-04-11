@@ -22,7 +22,7 @@ jobs:
 
       - name: test-configure-git
         run: |
-          set -euxo pipefail
+          set -euo pipefail
 
           [ "$(git config --get user.name)" == "${TEST_NAME}" ] || exit 1
           [ "$(git config --get user.email)" == "${TEST_EMAIL}" ] || exit 1

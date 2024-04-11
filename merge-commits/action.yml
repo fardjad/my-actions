@@ -24,8 +24,6 @@ runs:
     - id: create-pr
       shell: bash
       run: |
-        set -x
-
         REMOTE_REPO="https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
 
         if git ls-remote --exit-code --heads "${REMOTE_REPO}" "${{ inputs.source-branch }}" > /dev/null; then

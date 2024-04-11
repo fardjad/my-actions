@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@main
       - name: reset-branches
         run: |
-          set -euxo pipefail
+          set -euo pipefail
 
           git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
           git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true
@@ -34,7 +34,7 @@ jobs:
           target-branch: ${{ env.TEST_TARGET_BRANCH }}
       - name: cleanup
         run: |
-          set -euxo pipefail
+          set -euo pipefail
 
           git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
           git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true
