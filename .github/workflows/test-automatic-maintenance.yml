@@ -1,0 +1,42 @@
+name: test-automatic-maintenance
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "automatic-maintenance/**"
+
+env:
+  TEST_SOURCE_BRANCH: test-automatic-maintenance-source
+  TEST_TARGET_BRANCH: test-automatic-maintenance-target
+  TEST_PR_TITLE: test-automatic-maintenance
+
+jobs:
+  test-automatic-maintenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - name: reset-branches
+        run: |
+          set -euxo pipefail
+
+          git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
+          git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true
+          git reset --hard HEAD
+          git checkout main
+
+          git checkout -b "${{ env.TEST_TARGET_BRANCH }}"
+          git push origin "${{ env.TEST_TARGET_BRANCH }}"
+          git checkout main
+      - uses: fardjad/my-actions/automatic-maintenance@main
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          target-branch: ${{ env.TEST_TARGET_BRANCH }}
+      - name: cleanup
+        run: |
+          set -euxo pipefail
+
+          git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
+          git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true
+          git reset --hard HEAD
+          git checkout main
