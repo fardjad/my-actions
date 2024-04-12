@@ -1,0 +1,20 @@
+name: upgrade-npm-packages
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  upgrade-npm-packages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: actions/setup-node@main
+        with:
+          node-version: "latest"
+      - run: "npm install"
+      - uses: fardjad/my-actions/automatic-maintenance@main
+        with:
+          script-base-path: ".github/upgrade-npm-packages"
+          github-token: ${{ secrets.GH_PAT }}
