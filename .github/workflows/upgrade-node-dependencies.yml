@@ -14,7 +14,6 @@ jobs:
         with:
           node-version: "latest"
       - run: "npm install"
-      - uses: fardjad/my-actions/automatic-maintenance@main
+      - uses: fardjad/my-actions/automatic-maintenance-nodejs@main
         with:
-          script-base-path: ".github/upgrade-node-dependencies"
           github-token: ${{ secrets.GH_PAT }}

@@ -1,0 +1,27 @@
+name: "Automatic maintenance - Node.js"
+description: "Performs automatic maintenance tasks on a Node.js repository."
+author: "Fardjad Davari"
+inputs:
+  github-token:
+    description: "The GitHub PAT to use for creating, approving, and merging the PR with the changes."
+  target-branch:
+    description: "The branch to merge the changes into."
+    default: "${{ github.head_ref || github.ref_name }}"
+  node-version:
+    description: "The Node.js version to use."
+    default: "latest"
+outputs: {}
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-node@main
+      with:
+        node-version: ${{ inputs.node-version }}
+    - shell: bash
+      run: |
+        npm install
+    - uses: fardjad/my-actions/automatic-maintenance@main
+      with:
+        github-token: ${{ inputs.github-token }}
+        target-branch: ${{ inputs.target-branch }}
+        script-base-path: "${{ github.action_path }}/scripts"
