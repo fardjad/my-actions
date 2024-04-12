@@ -1,0 +1,13 @@
+{
+  "name": "my-actions",
+  "private": true,
+  "scripts": {
+    "check": "prettier -c .",
+    "format": "prettier --write ."
+  },
+  "author": "Fardjad Davari <public@fardjad.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  }
+}

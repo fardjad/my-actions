@@ -30,6 +30,7 @@ jobs:
           git checkout main
       - uses: fardjad/my-actions/automatic-maintenance@main
         with:
+          script-base-path: ".github/test-automatic-maintenance"
           github-token: ${{ secrets.GH_PAT }}
           target-branch: ${{ env.TEST_TARGET_BRANCH }}
       - name: cleanup
