@@ -12,7 +12,7 @@ inputs:
     description: "The GitHub PAT to use for creating, approving, and merging the PR with the changes."
   target-branch:
     description: "The branch to merge the changes into."
-    default: "main"
+    default: "${{ github.head_ref || github.ref_name }}"
 outputs:
   maintenance-needed:
     description: "A boolean indicating whether the repository needed maintenance."
@@ -27,6 +27,8 @@ runs:
     - id: check
       shell: bash
       run: |
+        set -x
+
         if ./${{ inputs.script-base-path }}/check; then
           echo "maintenance-needed=false" >> $GITHUB_OUTPUT
           exit 0
@@ -34,7 +36,7 @@ runs:
 
         echo "maintenance-needed=true" >> $GITHUB_OUTPUT
     - id: action
-      if: steps.check.outputs.maintenance-needed
+      if: ${{ steps.check.outputs.maintenance-needed }}
       shell: bash
       run: |
         set -euo pipefail
