@@ -57,7 +57,11 @@ runs:
         BODY="$(echo "$COMMIT_MESSAGE" | tail -n +3)"
 
         echo "pr-title=$TITLE" >> $GITHUB_OUTPUT
-        echo "pr-body=$BODY" >> $GITHUB_OUTPUT
+
+        echo "pr-body<<EOF" >> $GITHUB_OUTPUT
+        echo "${BODY}" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
         echo "source-branch=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_OUTPUT
     - id: merge
       if: steps.action.outputs.should-merge
