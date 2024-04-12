@@ -9,6 +9,6 @@
   "license": "MIT",
   "devDependencies": {
     "prettier": "^3.2.5",
-    "npm-check-updates": "^16.14.17"
+    "npm-check-updates": "^16.14.18"
   }
 }
