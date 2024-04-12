@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -euox pipefail
+
+git checkout -b automatic-maintenance-upgrade-deps
+
+upgraded="$(npx ncu -u --jsonUpgraded)"
+npm i
+
+commit_message_title="Upgrade dependencies"
+commit_message_body="$(echo $upgraded | jq -r 'keys[] as $k | "\($k): \(.[$k])"')"
+commit_message="$(printf ${commit_message_title}'\n\n'${commit_message_body})"
+
+git add package.json
+
+git commit -m "${commit_message}"
