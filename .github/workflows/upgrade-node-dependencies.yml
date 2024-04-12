@@ -1,0 +1,20 @@
+name: upgrade-node-dependencies
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  upgrade-node-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: actions/setup-node@main
+        with:
+          node-version: "latest"
+      - run: "npm install"
+      - uses: fardjad/my-actions/automatic-maintenance@main
+        with:
+          script-base-path: ".github/upgrade-node-dependencies"
+          github-token: ${{ secrets.GH_PAT }}
