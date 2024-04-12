@@ -27,7 +27,7 @@ runs:
     - id: check
       shell: bash
       run: |
-        if ./${{ inputs.script-base-path }}/check; then
+        if ${{ inputs.script-base-path }}/check; then
           echo "maintenance-needed=false" >> $GITHUB_OUTPUT
           exit 0
         fi
@@ -41,7 +41,7 @@ runs:
 
         PREVIOUS_COMMIT_HASH="$(git rev-parse HEAD)"
 
-        ./${{ inputs.script-base-path }}/action
+        ${{ inputs.script-base-path }}/action
 
         CURRENT_COMMIT_HASH="$(git rev-parse HEAD)"
 
