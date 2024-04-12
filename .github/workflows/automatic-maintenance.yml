@@ -1,0 +1,17 @@
+name: automatic-maintenance
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  automatic-maintenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: actions/setup-node@main
+        with:
+          node-version: "lts"
+      - uses: fardjad/my-actions/automatic-maintenance@main
+        with:
+          script-base-path: ".github/upgrade-npm-packages"
+          github-token: ${{ secrets.GH_PAT }}
