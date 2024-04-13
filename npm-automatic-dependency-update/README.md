@@ -17,7 +17,8 @@ jobs:
       - uses: actions/checkout@main
       - uses: actions/setup-node@main
         with:
-          node-version: "latest"
+          node-version: "lts/*"
+          check-latest: true
       - uses: fardjad/my-actions/npm-automatic-dependency-update@main
         with:
           github-token: ${{ secrets.GH_PAT }}
