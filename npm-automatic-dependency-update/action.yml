@@ -3,7 +3,7 @@ description: "Performs automatic dependency updates for Node.js projects using n
 author: "Fardjad Davari"
 inputs:
   dependency-install-script:
-    description: "The script to run to install the dependencies. By default, the action executes 'npm ci' if package-lock.json exists, otherwise it runs 'npm install'."
+    description: "The script to run to install the dependencies. By default, it runs 'npm install' followed by 'npm audit fix'."
     default: ""
   ncu-check-extra-flags:
     description: "The flags to pass to npm-check-updates to check if updates are available. '--errorLevel 2' will always be added to the flags."
