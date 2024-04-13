@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+npm test
+npm version patch --no-git-tag-version

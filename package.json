@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "check": "prettier -c .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "npm run check"
   },
   "author": "Fardjad Davari <public@fardjad.com>",
   "license": "MIT",

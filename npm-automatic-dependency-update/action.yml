@@ -14,8 +14,8 @@ inputs:
   ncu-upgrade-extra-flags:
     description: "The flags to pass to npm-check-updates to upgrade the dependencies. '--upgrade' and '--jsonUpgraded' will always be added to the flags."
     default: ""
-  post-upgrade-validation-script:
-    description: "The script to run after upgrading the dependencies to validate the changes. By default no validation will be performed."
+  post-upgrade-hook-script:
+    description: "The script to run after upgrading the dependencies. This can be used to run the tests or bump the package version. By default it runs 'npm test' and 'npm version patch --no-git-tag-version'."
     default: ""
   commit-message-preprocessor-script:
     description: "The script to run to preprocess the commit message. By default the commit message will be Upgrade dependencies followed by the list of upgraded dependencies."
@@ -85,8 +85,10 @@ runs:
 
         ${{ github.action_path }}/scripts/install-dependencies
 
-        if [ -n "${{ inputs.post-upgrade-validation-script }}" ]; then
-          "${{ inputs.post-upgrade-validation-script }}"
+        if [ -n "${{ inputs.post-upgrade-hook-script }}" ]; then
+          "${{ inputs.post-upgrade-hook-script }}"
+        else
+          "${{ github.action_path }}/scripts/post-upgrade-hook"
         fi
 
         commit_message_title="Upgrade dependencies"

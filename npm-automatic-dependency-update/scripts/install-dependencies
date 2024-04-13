@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 set -euo pipefail
 
 if [ -n "${DEPENDENCY_INSTALL_SCRIPT}" ]; then
