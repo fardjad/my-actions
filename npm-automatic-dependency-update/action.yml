@@ -92,11 +92,13 @@ runs:
         fi
 
         commit_message_title="Upgrade dependencies"
-        commit_message_body="$(echo $upgraded | jq -r 'keys[] as $k | "\($k): \(.[$k])"')"
+        commit_message_body="${upgraded}"
         commit_message="${commit_message_title}"$'\n\n'"${commit_message_body}"
 
         if [ -n "${{ inputs.commit-message-preprocessor-script }}" ]; then
           commit_message="$(echo "${commit_message}" | "${{ inputs.commit-message-preprocessor-script }}")"
+        else
+          commit_message="$(echo "${commit_message}" | "${{ github.action_path }}/scripts/commit-message-preprocessor.mjs")"
         fi
 
         git add -u .
