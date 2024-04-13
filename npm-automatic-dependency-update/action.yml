@@ -110,15 +110,6 @@ runs:
         fi
 
         echo "should-merge=true" >> "${GITHUB_OUTPUT}"
-
-        pr_title="$(echo "${commit_message}" | head -n 1)"
-        pr_body="$(echo "${commit_message}" | tail -n +3)"
-
-        echo "pr-title=${pr_title}" >> "${GITHUB_OUTPUT}"
-
-        echo "pr-body<<EOF" >> "${GITHUB_OUTPUT}"
-        echo "${pr_body}" >> "${GITHUB_OUTPUT}"
-        echo "EOF" >> "${GITHUB_OUTPUT}"
       env:
         DEPENDENCY_INSTALL_SCRIPT: ${{ inputs.dependency-install-script }}
     - name: Apply the changes
@@ -128,5 +119,3 @@ runs:
         github-token: ${{ inputs.github-token }}
         source-branch: ${{ inputs.source-branch }}
         target-branch: ${{ inputs.target-branch }}
-        pr-title: ${{ steps.upgrade.outputs.pr-title }}
-        pr-body: ${{ steps.upgrade.outputs.pr-body }}
