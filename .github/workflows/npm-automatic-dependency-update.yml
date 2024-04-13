@@ -13,7 +13,6 @@ jobs:
       - uses: actions/setup-node@main
         with:
           node-version: "latest"
-      - run: "npm install"
-      - uses: fardjad/my-actions/automatic-maintenance-nodejs@main
+      - uses: fardjad/my-actions/npm-automatic-dependency-update@main
         with:
           github-token: ${{ secrets.GH_PAT }}

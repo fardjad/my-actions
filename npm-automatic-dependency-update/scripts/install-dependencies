@@ -1,0 +1,11 @@
+set -euo pipefail
+
+if [ -n "${DEPENDENCY_INSTALL_SCRIPT}" ]; then
+  exec "${DEPENDENCY_INSTALL_SCRIPT}"
+fi
+
+if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+  exec npm ci
+fi
+
+exec npm install
