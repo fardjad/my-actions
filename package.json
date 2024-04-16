@@ -9,7 +9,8 @@
   "author": "Fardjad Davari <public@fardjad.com>",
   "license": "MIT",
   "devDependencies": {
-    "prettier": "^3.2.5",
-    "npm-check-updates": "^16.14.18"
+    "@types/node": "^20.12.7",
+    "npm-check-updates": "^16.14.18",
+    "prettier": "^3.2.5"
   }
 }
