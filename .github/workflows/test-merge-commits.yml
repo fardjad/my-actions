@@ -44,7 +44,6 @@ jobs:
           github-token: ${{ secrets.GH_PAT }}
           source-branch: "${{ env.TEST_SOURCE_BRANCH }}"
           target-branch: "${{ env.TEST_TARGET_BRANCH }}"
-          pr-title: "${{ env.TEST_PR_TITLE }}"
       - name: test-merge-commits
         run: |
           set -euo pipefail
