@@ -1,0 +1,100 @@
+name: test-run-path-or-script
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "run-path-or-script/**"
+
+jobs:
+  test-run-path:
+    runs-on: ubuntu-latest
+    steps:
+      - id: test
+        uses: fardjad/my-actions/run-path-or-script@main
+        with:
+          path-or-script: "/bin/pwd"
+      - name: assert
+        run: |
+          set -euo pipefail
+
+          if [ "${{ steps.test.outputs.is-path }}" != "true" ]; then
+            echo "Expected is-path to be true, got '${{ steps.test.outputs.is-path }}'"
+            exit 1
+          fi
+
+          if [ "${{ steps.test.outputs.exit-code }}" != "0" ]; then
+            echo "Expected exit-code to be 0, got '${{ steps.test.outputs.exit-code }}'"
+            exit 1
+          fi
+
+          if [ "${{ steps.test.outputs.stdout }}" != "$(pwd)" ]; then
+            echo "Expected stdout to be '$(pwd)', got '${{ steps.test.outputs.stdout }}'"
+            exit 1
+          fi
+
+          if [ "${{ steps.test.outputs.stderr }}" != "" ]; then
+            echo "Expected stderr to be empty, got '${{ steps.test.outputs.stderr }}'"
+            exit 1
+          fi
+  test-run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - id: test
+        uses: fardjad/my-actions/run-path-or-script@main
+        with:
+          path-or-script: |
+            #!/bin/sh
+
+            echo "$(pwd)"
+      - name: assert
+        run: |
+          set -euo pipefail
+
+          if [ "${{ steps.test.outputs.is-path }}" != "false" ]; then
+            echo "Expected is-path to be false, got '${{ steps.test.outputs.is-path }}'"
+            exit 1
+          fi
+
+          if [ "${{ steps.test.outputs.exit-code }}" != "0" ]; then
+            echo "Expected exit-code to be 0, got '${{ steps.test.outputs.exit-code }}'"
+            exit 1
+          fi
+
+          if [ "${{ steps.test.outputs.stdout }}" != "$(pwd)" ]; then
+            echo "Expected stdout to be '$(pwd)', got '${{ steps.test.outputs.stdout }}'"
+            exit 1
+          fi
+
+          if [ "${{ steps.test.outputs.stderr }}" != "" ]; then
+            echo "Expected stderr to be empty, got '${{ steps.test.outputs.stderr }}'"
+            exit 1
+          fi
+  test-failure-on-non-zero-exit-code:
+    runs-on: ubuntu-latest
+    steps:
+      - id: test-failure
+        uses: fardjad/my-actions/run-path-or-script@main
+        continue-on-error: true
+        with:
+          fail-on-non-zero-exit-code: "true"
+          path-or-script: |
+            #!/bin/sh
+
+            exit 1
+      - name: assert-failure
+        if: steps.test-failure.outcome != 'failure'
+        run: |
+          exit 1
+
+      - id: test-success
+        uses: fardjad/my-actions/run-path-or-script@main
+        with:
+          path-or-script: |
+            #!/bin/sh
+
+            exit 1
+      - name: assert-success
+        if: steps.test-success.outcome != 'success'
+        run: |
+          exit 1

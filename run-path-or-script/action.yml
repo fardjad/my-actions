@@ -1,0 +1,110 @@
+name: "Run a script from the input or a path"
+description: "A GitHub action to run a script from the input or a path."
+author: "Fardjad Davari"
+inputs:
+  path-or-script:
+    description: "The path to the script or the script itself."
+    required: true
+  fail-on-non-zero-exit-code:
+    description: "Whether to fail if the script exits with a non-zero code."
+    default: "false"
+outputs:
+  is-path:
+    description: "Whether the input is a path or a script."
+    value: "${{ steps.run.outputs.is-path }}"
+  exit-code:
+    description: "The exit code of the script."
+    value: "${{ steps.run.outputs.exit-code }}"
+  stdout:
+    description: "The standard output of the script."
+    value: "${{ steps.run.outputs.stdout }}"
+  stderr:
+    description: "The standard error of the script."
+    value: "${{ steps.run.outputs.stderr }}"
+runs:
+  using: "composite"
+  steps:
+    - name: Check if script is a path
+      id: check-if-path
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # Check for the shebang
+        if [[ $(echo "${{ inputs.path-or-script }}" | head -n 1) == "#!"* ]]; then
+          echo "is-path=false" >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
+
+        # Check for multiple lines
+        if [ $(echo "${{ inputs.path-or-script }}" | wc -l) -gt 1 ]; then
+          echo "is-path=false" >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
+
+        if [ ! -f "${{ inputs.path-or-script }}" ]; then
+          echo "is-path=false" >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
+
+        echo "is-path=true" >> "${GITHUB_OUTPUT}"
+    - name: Set paths for temporary files
+      id: set-temp-paths
+      shell: bash
+      run: set -euo pipefail
+
+        PATH_PREFIX="${RUNNER_TEMP}/run-path-or-script-${{ github.run_id }}-${{ github.run_attempt }}"
+
+        echo "path-prefix=${PATH_PREFIX}" >> "${GITHUB_OUTPUT}"
+
+        echo "stdout-path=${PATH_PREFIX}.stdout" >> "${GITHUB_OUTPUT}"
+
+        echo "stderr-path=${PATH_PREFIX}.stderr" >> "${GITHUB_OUTPUT}"
+    - name: Create a script file if the input is not a path
+      id: create-script-if-not-path
+      if: steps.check-if-path.outputs.is-path == 'false'
+      shell: bash
+      run: |
+        echo "${{ inputs.path-or-script }}" > "${{ steps.set-temp-paths.outputs.path-prefix }}"
+        chmod +x "${{ steps.set-temp-paths.outputs.path-prefix }}"
+    - name: Normalize the script path
+      id: normalize-script-path
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        if [ "${{ steps.check-if-path.outputs.is-path }}" == "true" ]; then
+          echo "script-path=${{ inputs.path-or-script }}" >> "${GITHUB_OUTPUT}"
+        else
+          echo "script-path=${{ steps.set-temp-paths.outputs.path-prefix }}" >> "${GITHUB_OUTPUT}"
+        fi
+    - name: Run the script
+      id: run
+      shell: bash
+      run: |
+        EXIT_CODE="0"
+        "${SCRIPT_PATH}" > "${STDOUT_PATH}" 2> "${STDERR_PATH}" || EXIT_CODE="$?"
+
+        echo "is-path=${IS_PATH}" >> "${GITHUB_OUTPUT}"
+        echo "exit-code=${EXIT_CODE}" >> "${GITHUB_OUTPUT}"
+        echo "stdout=$(cat "${STDOUT_PATH}")" >> "${GITHUB_OUTPUT}"
+        echo "stderr=$(cat "${STDERR_PATH}")" >> "${GITHUB_OUTPUT}"
+
+        if [ "${IS_PATH}" == "false" ]; then
+          rm -f "${SCRIPT_PATH}"
+        fi
+
+        rm -f "${STDOUT_PATH}" "${STDERR_PATH}"
+      env:
+        IS_PATH: ${{ steps.check-if-path.outputs.is-path }}
+        SCRIPT_PATH: ${{ steps.normalize-script-path.outputs.script-path }}
+        STDOUT_PATH: ${{ steps.set-temp-paths.outputs.stdout-path }}
+        STDERR_PATH: ${{ steps.set-temp-paths.outputs.stderr-path }}
+    - name: Fail if the script exits with a non-zero code
+      id: exit-code
+      if: inputs.fail-on-non-zero-exit-code == 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        exit "${{ steps.run.outputs.exit-code }}"
