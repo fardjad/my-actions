@@ -1,0 +1,10 @@
+{
+  "name": "commit-message-preprocessor",
+  "private": true,
+  "bin": {
+    "commit-message-preprocessor": "./commit-message-preprocessor.mjs"
+  },
+  "scripts": {
+    "test": "node commit-message-preprocessor.test.mjs"
+  }
+}
