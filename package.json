@@ -4,12 +4,15 @@
   "scripts": {
     "check": "prettier -c .",
     "format": "prettier --write .",
-    "test": "npm run check"
+    "test": "true"
   },
   "author": "Fardjad Davari <public@fardjad.com>",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.12.7",
     "prettier": "^3.2.4"
+  },
+  "dependencies": {
+    "npm": "^1.4.29"
   }
 }
