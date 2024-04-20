@@ -87,8 +87,14 @@ runs:
 
         echo "is-path=${IS_PATH}" >> "${GITHUB_OUTPUT}"
         echo "exit-code=${EXIT_CODE}" >> "${GITHUB_OUTPUT}"
-        echo "stdout=$(cat "${STDOUT_PATH}")" >> "${GITHUB_OUTPUT}"
-        echo "stderr=$(cat "${STDERR_PATH}")" >> "${GITHUB_OUTPUT}"
+
+        echo "stdout<<EOF" >> "${GITHUB_OUTPUT}"
+        cat "${STDOUT_PATH}" >> "${GITHUB_OUTPUT}"
+        echo "EOF" >> "${GITHUB_OUTPUT}"
+
+        echo "stderr<<EOF" >> "${GITHUB_OUTPUT}"
+        cat "${STDERR_PATH}" >> "${GITHUB_OUTPUT}"
+        echo "EOF" >> "${GITHUB_OUTPUT}"
 
         if [ "${IS_PATH}" == "false" ]; then
           rm -f "${SCRIPT_PATH}"
