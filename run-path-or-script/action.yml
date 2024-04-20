@@ -85,6 +85,9 @@ runs:
         EXIT_CODE="0"
         "${SCRIPT_PATH}" > "${STDOUT_PATH}" 2> "${STDERR_PATH}" || EXIT_CODE="$?"
 
+        cat "${STDOUT_PATH}"
+        cat "${STDERR_PATH}" >&2
+
         echo "is-path=${IS_PATH}" >> "${GITHUB_OUTPUT}"
         echo "exit-code=${EXIT_CODE}" >> "${GITHUB_OUTPUT}"
 
