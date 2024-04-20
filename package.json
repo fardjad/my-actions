@@ -10,9 +10,9 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.12.7",
-    "prettier": "^3.2.4"
+    "prettier": "^3.2.5"
   },
   "dependencies": {
-    "npm": "^1.4.29"
+    "npm": "^10.5.2"
   }
 }
