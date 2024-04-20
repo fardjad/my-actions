@@ -1,0 +1,75 @@
+name: test-automatic-npm-check-updates
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "automatic-npm-check-updates/**"
+
+env:
+  TEST_SOURCE_BRANCH: test-automatic-npm-check-updates-source
+  TEST_TARGET_BRANCH: test-automatic-npm-check-updates-target
+
+jobs:
+  test-automatic-npm-check-updates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: actions/setup-node@main
+        with:
+          node-version: "lts/*"
+          check-latest: true
+      - name: Cache node modules
+        uses: actions/cache@main
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - uses: fardjad/my-actions/configure-git@main
+      - name: Setup
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
+          git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true
+
+          git checkout -b "${{ env.TEST_TARGET_BRANCH }}"
+
+          npm add npm@latest-1
+          npm pkg set scripts.test=true
+
+          git add .
+          git commit -m "Add npm@latest-1 and set scripts.test=true"
+          git push origin "${{ env.TEST_TARGET_BRANCH }}"
+      - name: Run commit-message-preprocessor tests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pushd automatic-npm-check-updates/node-commit-message-preprocessor
+          npm install
+          npm test
+          popd
+      - name: Test
+        uses: fardjad/my-actions/automatic-npm-check-updates@main
+        with:
+          source-branch: ${{ env.TEST_SOURCE_BRANCH }}
+          target-branch: ${{ env.TEST_TARGET_BRANCH }}
+          github-token: ${{ secrets.GH_PAT }}
+      - name: Assertion
+        shell: bash
+        run: |
+          npm-check-updates --errorLevel 2
+      - name: Cleanup
+        if: always()
+        run: |
+          set -euo pipefail
+
+          git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
+          git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true
