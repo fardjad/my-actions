@@ -77,7 +77,6 @@ jobs:
         uses: fardjad/my-actions/run-path-or-script@main
         continue-on-error: true
         with:
-          fail-on-non-zero-exit-code: "true"
           path-or-script: |
             #!/bin/sh
 
@@ -90,6 +89,7 @@ jobs:
       - id: test-success
         uses: fardjad/my-actions/run-path-or-script@main
         with:
+          fail-on-non-zero-exit-code: "false"
           path-or-script: |
             #!/bin/sh
 
