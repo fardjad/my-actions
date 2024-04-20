@@ -1,0 +1,90 @@
+name: test-automatic-maintenance
+
+env:
+  TEST_PREPARE_FILE: "${RUNNER_TEMP}/test-automatic-maintenance-prepare-file"
+  TEST_CHECK_FILE: "${RUNNER_TEMP}/test-automatic-maintenance-check-file"
+  TEST_CHANGE_FILE: "${RUNNER_TEMP}/test-automatic-maintenance-change-file"
+  TEST_VERIFY_FILE: "${RUNNER_TEMP}/test-automatic-maintenance-verify-file"
+  TEST_COMMIT_FILE: "${RUNNER_TEMP}/test-automatic-maintenance-commit-file"
+
+  TEST_SOURCE_BRANCH: test-automatic-maintenance-source
+  TEST_TARGET_BRANCH: test-automatic-maintenance-target
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "automatic-maintenance/**"
+
+jobs:
+  test-automatic-maintenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: fardjad/my-actions/configure-git@main
+      - name: Setup
+        run: |
+          set -euo pipefail
+
+          git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
+          git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true
+
+          git checkout -b "${{ env.TEST_TARGET_BRANCH }}"
+          git push origin "${{ env.TEST_TARGET_BRANCH }}"
+      - name: Test
+        uses: fardjad/my-actions/automatic-maintenance@main
+        with:
+          prepare-script: |
+            #!/usr/bin/env bash
+
+            touch "${{ env.TEST_PREPARE_FILE }}"
+            exit 0
+          check-script: |
+            #!/usr/bin/env bash
+
+            touch "${{ env.TEST_CHECK_FILE }}"
+            exit 1
+          source-branch: ${{ env.TEST_SOURCE_BRANCH }}
+          change-script: |
+            #!/usr/bin/env bash
+
+            touch automatic-maintenance-test-file
+
+            touch "${{ env.TEST_CHANGE_FILE }}"
+            exit 0
+          verify-script: |
+            #!/usr/bin/env bash
+
+            [ -f automatic-maintenance-test-file ] || exit 1
+
+            touch "${{ env.TEST_VERIFY_FILE }}"
+            exit 0
+          commit-script: |
+            #!/usr/bin/env bash
+
+            set -euox pipefail
+
+            git add .
+            git commit -m "Perform automatic maintenance tasks"
+
+            touch "${{ env.TEST_COMMIT_FILE }}"
+            exit 0
+          target-branch: ${{ env.TEST_TARGET_BRANCH }}
+          github-token: ${{ secrets.GH_PAT }}
+      - name: Assertion
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          [ -f "${{ env.TEST_PREPARE_FILE }}" ] || (echo "Prepare file is missing" && exit 1)
+          [ -f "${{ env.TEST_CHECK_FILE }}" ] || (echo "Check file is missing" && exit 1)
+          [ -f "${{ env.TEST_CHANGE_FILE }}" ] || (echo "Change file is missing" && exit 1)
+          [ -f "${{ env.TEST_VERIFY_FILE }}" ] || (echo "Verify file is missing" && exit 1)
+          [ -f "${{ env.TEST_COMMIT_FILE }}" ] || (echo "Commit file is missing" && exit 1)
+      - name: Cleanup
+        if: always()
+        run: |
+          set -euo pipefail
+
+          git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
+          git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true

@@ -1,0 +1,124 @@
+name: "Automatic Maintenance"
+description: "Performs automatic maintenance tasks on a repository and merges the changes."
+author: "Fardjad Davari"
+inputs:
+  prepare-script:
+    description: "The script to run to prepare the repository for the maintenance tasks. For example, this can be used to install the dependencies."
+    default: |
+      #!/usr/bin/env bash
+
+      exit 0
+  check-script:
+    description: "The script to run to check if the maintenance tasks are needed. The script should set the 'maintenance-needed' output to 'true' if the maintenance tasks are needed."
+    default: |
+      #!/usr/bin/env bash
+
+      exit 1
+  source-branch:
+    description: "The branch to create the PR from."
+    default: "automatic-maintenance"
+  change-script:
+    description: "The script to run to perform the changes."
+    default: |
+      #!/usr/bin/env bash
+
+      exit 0
+  verify-script:
+    description: "The script to run to verify the changes."
+    default: |
+      #!/usr/bin/env bash
+
+      exit 0
+  commit-script:
+    description: "The script to run to commit the changes."
+    default: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+
+      git add -u .
+      git commit -m "Perform automatic maintenance tasks" || true
+  target-branch:
+    description: "The branch to merge the changes into."
+    default: "${{ github.head_ref || github.ref_name }}"
+  github-token:
+    description: "The GitHub PAT to use for creating, approving, and merging the PR with the changes."
+    required: true
+outputs: {}
+runs:
+  using: "composite"
+  steps:
+    - name: Run the prepare script
+      uses: fardjad/my-actions/run-path-or-script@main
+      with:
+        fail-on-non-zero-exit-code: "true"
+        path-or-script: "${{ inputs.prepare-script }}"
+    - name: Check if the maintenance tasks are needed
+      id: run-check-script
+      uses: fardjad/my-actions/run-path-or-script@main
+      with:
+        path-or-script: "${{ inputs.check-script }}"
+    - id: check
+      shell: bash
+      run: |
+        if [ ${{ steps.run-check-script.outputs.exit-code }} == "0" ]; then
+          echo "maintenance-needed=false" >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
+
+        echo "maintenance-needed=true" >> "${GITHUB_OUTPUT}"
+    - name: Configure Git
+      if: steps.check.outputs.maintenance-needed == 'true'
+      uses: fardjad/my-actions/configure-git@main
+    - name: Switch to the source branch
+      id: switch-to-source-branch
+      if: steps.check.outputs.maintenance-needed == 'true'
+      shell: bash
+      run: |
+        #!/usr/bin/env bash
+
+        set -euo pipefail
+
+        git checkout -b "${{ inputs.source-branch }}"
+
+        echo "commit-hash=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+    - name: Run the change script
+      if: steps.check.outputs.maintenance-needed == 'true'
+      uses: fardjad/my-actions/run-path-or-script@main
+      with:
+        path-or-script: "${{ inputs.change-script }}"
+    - name: Run the verify script
+      if: steps.check.outputs.maintenance-needed == 'true'
+      uses: fardjad/my-actions/run-path-or-script@main
+      with:
+        path-or-script: "${{ inputs.verify-script }}"
+    - name: Run the commit script
+      if: steps.check.outputs.maintenance-needed == 'true'
+      uses: fardjad/my-actions/run-path-or-script@main
+      with:
+        path-or-script: "${{ inputs.commit-script }}"
+    - name: Check if the changes should be merged
+      id: check-if-merge-needed
+      if: steps.check.outputs.maintenance-needed == 'true'
+      shell: bash
+      run: |
+        #!/usr/bin/env bash
+
+        set -euo pipefail
+
+        CURRENT_COMMIT_HASH="$(git rev-parse HEAD)"
+
+        if [ "${CURRENT_COMMIT_HASH}" == "${PREVIOUS_COMMIT_HASH}" ]; then
+          echo "should-merge=false" >> "${GITHUB_OUTPUT}"
+          exit 0
+        fi
+
+        echo "should-merge=true" >> "${GITHUB_OUTPUT}"
+      env:
+        PREVIOUS_COMMIT_HASH: ${{ steps.switch-to-source-branch.outputs.commit-hash }}
+    - name: Apply the changes
+      if: steps.check-if-merge-needed.outputs.should-merge == 'true'
+      uses: fardjad/my-actions/merge-commits@main
+      with:
+        github-token: ${{ inputs.github-token }}
+        source-branch: ${{ inputs.source-branch }}
+        target-branch: ${{ inputs.target-branch }}
