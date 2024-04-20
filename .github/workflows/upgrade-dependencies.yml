@@ -1,0 +1,69 @@
+name: upgrade-dependencies
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  upgrade-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: actions/setup-node@main
+        with:
+          node-version: "lts/*"
+          check-latest: true
+      - name: Cache node modules
+        uses: actions/cache@main
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - uses: fardjad/my-actions/automatic-maintenance@main
+        with:
+          prepare-script: |
+            #!/usr/bin/env bash
+
+            set -euo pipefail
+
+            npm install -g npm-check-updates
+          check-script: |
+            #!/usr/bin/env bash
+
+            set -euo pipefail
+
+            npx npm-check-updates --errorLevel 2
+          change-script: |
+            #!/usr/bin/env bash
+
+            set -euo pipefail
+
+            npx npm-check-updates -u --jsonUpgraded > "${{ runner.temp }}/upgraded.json"
+            npm install
+            npm run format
+          verify-script: |
+            #!/usr/bin/env bash
+
+            set -euo pipefail
+
+            npm run test
+          commit-script: |
+            #!/usr/bin/env bash
+
+            set -euo pipefail
+
+            cat <<EOF | node node-commit-message-preprocessor/commit-message-preprocessor.mjs > "${{ runner.temp }}/commit-message"
+            Upgrade dependencies
+
+            $(cat "${{ runner.temp }}/upgraded.json")
+            EOF
+
+            git add .
+            git commit -F "${{ runner.temp }}/commit-message"
+          github-token: ${{ secrets.GH_PAT }}
