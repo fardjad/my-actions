@@ -1,4 +1,4 @@
-# NPM Automatic Dependency Update
+# NPM Automatic Dependency Update (Deprecated)
 
 ## Example Usage
 

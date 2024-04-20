@@ -8,5 +8,4 @@ This repository contains my GitHub Actions to use in my projects.
 - [`automatic-npm-check-updates`](./automatic-npm-check-updates/)
 - [`configure-git`](./configure-git)
 - [`merge-commits`](./merge-commits)
-- [`npm-automatic-dependency-update`](./npm-automatic-dependency-update)
 - [`run-path-or-script`](./run-path-or-script)

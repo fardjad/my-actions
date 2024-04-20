@@ -1,4 +1,4 @@
-name: "NPM Automatic Dependency Update"
+name: "NPM Automatic Dependency Update (Deprecated)"
 description: "Performs automatic dependency updates for Node.js projects using npm-check-updates."
 author: "Fardjad Davari"
 inputs:
