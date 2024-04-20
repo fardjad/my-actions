@@ -5,6 +5,7 @@ This repository contains my GitHub Actions to use in my projects.
 ## Actions
 
 - [`automatic-maintenance`](./automatic-maintenance)
+- [`automatic-npm-check-updates`](./automatic-npm-check-updates/)
 - [`configure-git`](./configure-git)
 - [`merge-commits`](./merge-commits)
 - [`npm-automatic-dependency-update`](./npm-automatic-dependency-update)
