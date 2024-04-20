@@ -65,7 +65,10 @@ runs:
       if: steps.check-if-path.outputs.is-path == 'false'
       shell: bash
       run: |
-        echo "${{ inputs.path-or-script }}" > "${{ steps.set-temp-paths.outputs.path-prefix }}"
+        cat <<EOF > "${{ steps.set-temp-paths.outputs.path-prefix }}"
+        ${{ inputs.path-or-script }}
+        EOF
+
         chmod +x "${{ steps.set-temp-paths.outputs.path-prefix }}"
     - name: Normalize the script path
       id: normalize-script-path
