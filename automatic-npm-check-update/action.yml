@@ -1,0 +1,90 @@
+name: "Automatic npm-check-update"
+description: "Automatically update npm dependencies with npm-check-updates."
+author: "Fardjad Davari"
+inputs:
+  source-branch:
+    description: "The branch to create the PR from."
+    default: "automatic-npm-check-update"
+  target-branch:
+    description: "The branch to merge the changes into."
+    default: "${{ github.head_ref || github.ref_name }}"
+  change-script:
+    description: "The script to run after the dependencies are updated."
+    default: |
+      npm install
+      npm audit fix --quiet --no-progress --no-fund || true
+
+      npm version patch --no-git-tag-version
+  verify-script:
+    description: "The script to run to verify the changes."
+    default: |
+      npm run test
+  commit-title:
+    description: "The commit header."
+    default: "Upgrade dependencies"
+  github-token:
+    description: "The GitHub PAT to use for creating, approving, and merging the PR with the changes."
+    required: true
+outputs: {}
+runs:
+  using: "composite"
+  steps:
+    - name: Check the dependencies
+      shell: bash
+      run: |
+        for cmd in npm npx node; do
+          command -v $cmd >/dev/null || exit 1
+        done
+    - name: Automatic maintenance
+      uses: fardjad/my-actions/automatic-maintenance@main
+      with:
+        source-branch: ${{ inputs.source-branch }}
+        target-branch: ${{ inputs.target-branch }}
+        github-token: ${{ inputs.github-token }}
+
+        prepare-script: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          pushd "${{ github.action_path }}/node-commit-message-preprocessor"
+          npm install
+          npm link
+          popd
+          command -v commit-message-preprocessor >/dev/null || exit 1
+
+          npm install -g npm-check-updates
+          command -v ncu >/dev/null || exit 1
+        check-script: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          npm-check-updates --errorLevel 2
+        change-script: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          npm-check-updates -u --jsonUpgraded > "${{ runner.temp }}/upgraded.json"
+
+          ${{ inputs.change-script }}
+        verify-script: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          ${{ inputs.verify-script }}
+        commit-script: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          cat <<EOF | commit-message-preprocessor > "${{ runner.temp }}/commit-message"
+          ${{ inputs.commit-title }}
+
+          $(cat "${{ runner.temp }}/upgraded.json")
+          EOF
+
+          git add .
+          git commit -F "${{ runner.temp }}/commit-message"
