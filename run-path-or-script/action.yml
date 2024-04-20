@@ -7,7 +7,7 @@ inputs:
     required: true
   fail-on-non-zero-exit-code:
     description: "Whether to fail if the script exits with a non-zero code."
-    default: "false"
+    default: "true"
 outputs:
   is-path:
     description: "Whether the input is a path or a script."

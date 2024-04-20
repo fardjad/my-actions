@@ -50,12 +50,12 @@ runs:
     - name: Run the prepare script
       uses: fardjad/my-actions/run-path-or-script@main
       with:
-        fail-on-non-zero-exit-code: "true"
         path-or-script: "${{ inputs.prepare-script }}"
     - name: Check if the maintenance tasks are needed
       id: run-check-script
       uses: fardjad/my-actions/run-path-or-script@main
       with:
+        fail-on-non-zero-exit-code: "false"
         path-or-script: "${{ inputs.check-script }}"
     - id: check
       shell: bash
