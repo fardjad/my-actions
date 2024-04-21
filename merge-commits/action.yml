@@ -1,4 +1,4 @@
-name: "Merge Branch via PR"
+name: "Merge Commits"
 description: "A GitHub action to merge the commits from a source branch into a target branch via a PR."
 author: "Fardjad Davari"
 inputs:

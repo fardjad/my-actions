@@ -5,6 +5,7 @@ cd "$ROOT"
 if [ -f .commit ]; then
     rm .commit
     npm run generate-docs
+    git add README.md
     git add */README.md
     git commit --amend -C HEAD --no-verify
 fi
