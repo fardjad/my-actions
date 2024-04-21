@@ -1,36 +1,51 @@
 name: "Automatic Maintenance"
-description: "Performs automatic maintenance tasks on a repository and merges the changes."
+description: >
+  This GitHub Action provides an _opinionated workflow_ for performing automatic
+  maintenance tasks on a repository. It can be used to automate tasks such as
+  updating dependencies, formatting code, etc.
 author: "Fardjad Davari"
 inputs:
   prepare-script:
-    description: "The script to run to prepare the repository for the maintenance tasks. For example, this can be used to install the dependencies."
+    description: >
+      The script to set up the environment for maintenance tasks, such as 
+      installing project dependencies. By default, it does nothing.
     default: |
       #!/usr/bin/env bash
 
       exit 0
   check-script:
-    description: "The script to run to check if the maintenance tasks are needed. The script should set the 'maintenance-needed' output to 'true' if the maintenance tasks are needed."
+    description: >
+      The script that checks whether any maintenance is required. If it exits 
+      with a 0 exit code, no maintenance is needed. Otherwise, it indicates 
+      that the workflow should proceed. By default, it always assumes that 
+      maintenance is needed.
     default: |
       #!/usr/bin/env bash
 
       exit 1
   source-branch:
-    description: "The branch to create the PR from."
+    description: "The branch to create the PR with changes from."
     default: "automatic-maintenance"
   change-script:
-    description: "The script to run to perform the changes."
+    description: >
+      The script to run to perform the changes. By default, it does nothing.
     default: |
       #!/usr/bin/env bash
 
       exit 0
   verify-script:
-    description: "The script to run to verify the changes."
+    description: >
+      The script to run to verify the changes. This could be used to run 
+      tests, etc.
     default: |
       #!/usr/bin/env bash
 
       exit 0
   commit-script:
-    description: "The script to run to commit the changes."
+    description: >
+      The script to run to commit the changes. By default, it adds all the 
+      modified files to the git index and commits them with a default message.
+
     default: |
       #!/usr/bin/env bash
       set -euo pipefail
@@ -38,10 +53,14 @@ inputs:
       git add -u .
       git commit -m "Perform automatic maintenance tasks" || true
   target-branch:
-    description: "The branch to merge the changes into."
+    description: >
+      The branch to merge the changes into. Defaults to `github.head_ref` or 
+      `github.ref_name`.
     default: "${{ github.head_ref || github.ref_name }}"
   github-token:
-    description: "The GitHub PAT to use for creating, approving, and merging the PR with the changes."
+    description: >
+      The GitHub PAT to use for creating, approving, and merging the PR with 
+      the changes.
     required: true
 outputs: {}
 runs:

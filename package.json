@@ -4,12 +4,21 @@
   "scripts": {
     "check": "prettier -c .",
     "format": "prettier --write .",
-    "test": "npm run check"
+    "generate-docs": "node scripts/generate-docs.mjs",
+    "generate-docs:watch": "nodemon -e ejs,yml scripts/generate-docs.mjs",
+    "test": "npm run check",
+    "prepare": "husky"
   },
   "author": "Fardjad Davari <public@fardjad.com>",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.12.7",
-    "prettier": "^3.2.5"
+    "ejs": "^3.1.10",
+    "glob": "^10.3.12",
+    "husky": "^9.0.11",
+    "nodemon": "^3.1.0",
+    "prettier": "^3.2.5",
+    "templgen": "^0.1.152",
+    "yaml": "^2.4.1"
   }
 }

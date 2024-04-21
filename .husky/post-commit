@@ -1,0 +1,12 @@
+bash <<EOF
+ROOT="$(dirname "$0")/.."
+DIR="$PWD"
+cd "$ROOT"
+if [ -f .commit ]; then
+    rm .commit
+    npm run generate-docs
+    git add */README.md
+    git commit --amend -C HEAD --no-verify
+fi
+cd "$DIR"
+EOF

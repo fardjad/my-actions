@@ -1,0 +1,7 @@
+bash <<EOF
+ROOT="$(dirname "$0")/.."
+DIR="$PWD"
+cd "$ROOT"
+touch ".commit"
+cd "$DIR"
+EOF

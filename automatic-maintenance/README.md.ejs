@@ -1,0 +1,133 @@
+<%
+const yaml = await import("yaml");
+const fs = await import("fs");
+
+const action = yaml.parse(fs.readFileSync("action.yml", "utf-8"));
+%>
+
+# <%= action.name %>
+
+## Synopsis
+
+<%= action.description %>
+
+The maintenance workflow is depicted in the following state diagram:
+
+```mermaid
+stateDiagram-v2
+  UserScripts: User Scripts
+
+  Prepare: prepare-script
+  Check: check-script
+  Change: change-script
+  Verify: verify-script
+  Commit: commit-script
+  
+  MergeChanges: Merge the changes to the target branch
+
+  state check_if_state <<choice>>
+  state user_scripts_if_state <<choice>>
+  
+  state UserScripts {
+    [*] --> Prepare
+    Prepare --> Check
+
+    Check --> check_if_state
+    check_if_state --> [*]: exit_code = 0
+    check_if_state --> Change: exit_code ≠ 0
+
+    Change --> Verify
+    Verify --> Commit 
+    Commit --> [*]
+  }
+  
+  UserScripts --> user_scripts_if_state
+  user_scripts_if_state --> [*]: Failure
+  user_scripts_if_state --> MergeChanges: Success
+```
+
+If any 
+script other than `check-script` exits with a non-zero exit code, it will cause 
+the action to fail.
+
+## Inputs
+
+Variables ending with the suffix `-script` can either be a file path to a script 
+or a multi-line string that starts with a shebang line.
+
+<%- inputsToMarkdownTable(action.inputs) %>
+
+## Building Blocks
+
+This action is very opinionated and may not be suitable for all use cases. 
+If you need more flexibility, you can use the building blocks of this 
+action to create your own custom action. The building blocks are:
+
+- [run-path-or-script](../run-path-or-script)
+- [configure-git](../configure-git)
+- [merge-commits](../merge-commits)
+
+## Example Usage
+
+Suppose we want to automatically update the version of Node.js in the 
+[`.nvmrc`](https://github.com/nvm-sh/nvm#nvmrc) file located in the root of the 
+repository (this is just a contrived example). Here's an example workflow to do 
+that using this action:
+
+```yaml
+name: update-nvmrc
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  update-nvmrc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: fardjad/my-actions/automatic-maintenance@main
+        with:
+          prepare-script: |
+            #!/usr/bin/env bash
+            
+            set -euo pipefail
+
+            cp .nvmrc "${RUNNER_TEMP}/old-nvmrc"
+            curl -s https://registry.npmjs.org/node | jq -r '.["dist-tags"]["latest"]' > "${RUNNER_TEMP}/new-nvmrc"
+          check-script: |
+            #!/usr/bin/env bash
+
+            set -euo pipefail
+            
+            current_version="$(cat .nvmrc)"
+            new_version="$(cat ${RUNNER_TEMP}/new-nvmrc)"
+            
+            [ "$current_version" == "$new_version" ] || exit 1
+          change-script: |
+            #!/usr/bin/env bash
+
+            set -euo pipefail
+
+            cp "${RUNNER_TEMP}/new-nvmrc" .nvmrc
+          verify-script: |
+            #!/usr/bin/env bash
+            
+            # For this example, we don't need to do anything here. 
+            # We can also omit this input altogether.
+            exit 0
+          commit-script: |
+            #!/usr/bin/env bash
+
+            set -euo pipefail
+
+            old_version="$(cat ${RUNNER_TEMP}/old-nvmrc)"
+            new_version="$(cat .nvmrc)"
+
+            git add .nvmrc
+            cat <<EOF | git commit -F -
+            Update Node.js version in .nvmrc
+            
+            From ${old_version} to ${new_version}
+            EOF
+          github-token: ${{ secrets.GH_PAT }}
+```
