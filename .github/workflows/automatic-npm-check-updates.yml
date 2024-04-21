@@ -28,6 +28,6 @@ jobs:
       - uses: fardjad/my-actions/automatic-npm-check-updates@main
         with:
           github-token: ${{ secrets.GH_PAT }}
-          change-script: |
+          post-update-commands: |
             npm install
             npm run format

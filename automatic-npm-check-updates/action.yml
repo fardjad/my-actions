@@ -1,30 +1,40 @@
 name: "Automatic npm-check-updates"
-description: "Automatically update npm dependencies with `npm-check-updates`."
+description: >-
+  This action provides an _opinionated workflow_ for updating dependencies in a
+  Node.js project.
 author: "Fardjad Davari"
 inputs:
   source-branch:
-    description: "The branch to create the PR from."
+    description: "The branch to create the PR with changes from."
     default: "automatic-npm-check-updates"
   target-branch:
-    description: "The branch to merge the changes into."
+    description: >-
+      The branch to merge the changes into. Defaults to `github.head_ref` or 
+      `github.ref_name`.
     default: "${{ github.head_ref || github.ref_name }}"
-  change-script:
-    description: "The script to run after the dependencies are updated."
+  github-token:
+    description: >-
+      The GitHub PAT to use for creating, approving, and merging the PR with 
+      the changes.
+    required: true
+  post-update-commands:
+    description: >-
+      The commands to run after updating the dependencies. They will be 
+      executed in a bash shell.
     default: |
       npm install
       npm audit fix --quiet --no-progress --no-fund || true
 
       npm version patch --no-git-tag-version
   verify-script:
-    description: "The script to run to verify the changes."
+    description: >-
+      The script to run to verify the changes. This could be used to run 
+      tests, etc.
     default: |
       npm run test
   commit-title:
-    description: "The commit header."
+    description: "The commit title."
     default: "Upgrade dependencies"
-  github-token:
-    description: "The GitHub PAT to use for creating, approving, and merging the PR with the changes."
-    required: true
 outputs: {}
 runs:
   using: "composite"
@@ -68,23 +78,16 @@ runs:
 
           npm-check-updates -u --jsonUpgraded > "${{ runner.temp }}/upgraded.json"
 
-          ${{ inputs.change-script }}
-        verify-script: |
-          #!/usr/bin/env bash
-
-          set -euo pipefail
-
-          ${{ inputs.verify-script }}
+          ${{ inputs.post-update-commands }}
+        verify-script: ${{ inputs.verify-script }}
         commit-script: |
           #!/usr/bin/env bash
 
           set -euo pipefail
 
-          cat <<EOF | commit-message-preprocessor > "${{ runner.temp }}/commit-message"
+          git add -u .
+          cat <<COMMIT_SCRIPT_EOF | commit-message-preprocessor | git commit -F -
           ${{ inputs.commit-title }}
 
           $(cat "${{ runner.temp }}/upgraded.json")
-          EOF
-
-          git add .
-          git commit -F "${{ runner.temp }}/commit-message"
+          COMMIT_SCRIPT_EOF
