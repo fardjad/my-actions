@@ -2,7 +2,7 @@
 
 ## Synopsis
 
-This GitHub Action provides an _opinionated workflow_ for performing automatic maintenance tasks on a repository. It can be used to automate tasks such as updating dependencies, formatting code, etc.
+This action provides an _opinionated workflow_ for performing automatic maintenance tasks on a repository. It can be used to automate tasks such as updating dependencies, formatting code, etc.
 
 The maintenance workflow is depicted in the following state diagram:
 
