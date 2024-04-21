@@ -31,23 +31,25 @@ runs:
         set -euo pipefail
 
         # Check for the shebang
-        if [[ $(echo "${{ inputs.path-or-script }}" | head -n 1) == "#!"* ]]; then
+        if [[ $(echo "${INPUT_PATH_OR_SCRIPT}" | head -n 1) == "#!"* ]]; then
           echo "is-path=false" >> "${GITHUB_OUTPUT}"
           exit 0
         fi
 
         # Check for multiple lines
-        if [ $(echo "${{ inputs.path-or-script }}" | wc -l) -gt 1 ]; then
+        if [ $(echo "${INPUT_PATH_OR_SCRIPT}" | wc -l) -gt 1 ]; then
           echo "is-path=false" >> "${GITHUB_OUTPUT}"
           exit 0
         fi
 
-        if [ ! -f "${{ inputs.path-or-script }}" ]; then
+        if [ ! -f "${INPUT_PATH_OR_SCRIPT}" ]; then
           echo "is-path=false" >> "${GITHUB_OUTPUT}"
           exit 0
         fi
 
         echo "is-path=true" >> "${GITHUB_OUTPUT}"
+      env:
+        INPUT_PATH_OR_SCRIPT: ${{ inputs.path-or-script }}
     - name: Set paths for temporary files
       id: set-temp-paths
       shell: bash
@@ -65,11 +67,10 @@ runs:
       if: steps.check-if-path.outputs.is-path == 'false'
       shell: bash
       run: |
-        cat <<RUN_PATH_OR_SCRIPT_EOF > "${{ steps.set-temp-paths.outputs.path-prefix }}"
-        ${{ inputs.path-or-script }}
-        RUN_PATH_OR_SCRIPT_EOF
-
+        echo "${INPUT_PATH_OR_SCRIPT}" > "${{ steps.set-temp-paths.outputs.path-prefix }}"
         chmod +x "${{ steps.set-temp-paths.outputs.path-prefix }}"
+      env:
+        INPUT_PATH_OR_SCRIPT: ${{ inputs.path-or-script }}
     - name: Normalize the script path
       id: normalize-script-path
       shell: bash
@@ -77,10 +78,12 @@ runs:
         set -euo pipefail
 
         if [ "${{ steps.check-if-path.outputs.is-path }}" == "true" ]; then
-          echo "script-path=${{ inputs.path-or-script }}" >> "${GITHUB_OUTPUT}"
+          echo "script-path=${INPUT_PATH_OR_SCRIPT}" >> "${GITHUB_OUTPUT}"
         else
           echo "script-path=${{ steps.set-temp-paths.outputs.path-prefix }}" >> "${GITHUB_OUTPUT}"
         fi
+      env:
+        INPUT_PATH_OR_SCRIPT: ${{ inputs.path-or-script }}
     - name: Run the script
       id: run
       shell: bash
