@@ -1,0 +1,33 @@
+<%
+const glob = await import('glob');
+const yaml = await import("yaml");
+const fs = await import("node:fs");
+const path = await import("node:path");
+
+const actions = [];
+
+for (const action of glob.sync("*/action.yml")) {
+  const actionPath = path.dirname(action);
+  const actionYaml = yaml.parse(fs.readFileSync(action, "utf-8"));
+  
+  actions.push({
+    name: actionYaml.name,
+    description: actionYaml.description,
+    path: actionPath
+  });  
+}
+
+actions.sort((a, b) => a.name.localeCompare(b.name));
+%>
+
+# My GitHub Actions
+
+This repository contains my GitHub Actions that I use in my projects.
+
+## Actions
+
+| Action | Description |
+| --- | --- |
+<% for (const action of actions) { -%>
+| [<%= action.name %>](<%= action.path %>) | <%= action.description %> |
+<% } -%>

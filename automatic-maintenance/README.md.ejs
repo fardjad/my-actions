@@ -22,12 +22,12 @@ stateDiagram-v2
   Change: change-script
   Verify: verify-script
   Commit: commit-script
-  
+
   MergeChanges: Merge the changes to the target branch
 
   state check_if_state <<choice>>
   state user_scripts_if_state <<choice>>
-  
+
   state UserScripts {
     [*] --> Prepare
     Prepare --> Check
@@ -37,30 +37,30 @@ stateDiagram-v2
     check_if_state --> Change: exit_code ≠ 0
 
     Change --> Verify
-    Verify --> Commit 
+    Verify --> Commit
     Commit --> [*]
   }
-  
+
   UserScripts --> user_scripts_if_state
   user_scripts_if_state --> [*]: Failure
   user_scripts_if_state --> MergeChanges: Success
 ```
 
-If any 
-script other than `check-script` exits with a non-zero exit code, it will cause 
+If any
+script other than `check-script` exits with a non-zero exit code, it will cause
 the action to fail.
 
 ## Inputs
 
-Variables ending with the suffix `-script` can either be a file path to a script 
+Variables ending with the suffix `-script` can either be a file path to a script
 or a multi-line string that starts with a shebang line.
 
 <%- inputsToMarkdownTable(action.inputs) %>
 
 ## Building Blocks
 
-This action is very opinionated and may not be suitable for all use cases. 
-If you need more flexibility, you can use the building blocks of this 
+This action is very opinionated and may not be suitable for all use cases.
+If you need more flexibility, you can use the building blocks of this
 action to create your own custom action. The building blocks are:
 
 - [run-path-or-script](../run-path-or-script)
@@ -69,9 +69,9 @@ action to create your own custom action. The building blocks are:
 
 ## Example Usage
 
-Suppose we want to automatically update the version of Node.js in the 
-[`.nvmrc`](https://github.com/nvm-sh/nvm#nvmrc) file located in the root of the 
-repository (this is just a contrived example). Here's an example workflow to do 
+Suppose we want to automatically update the version of Node.js in the
+[`.nvmrc`](https://github.com/nvm-sh/nvm#nvmrc) file located in the root of the
+repository (this is just a contrived example). Here's an example workflow to do
 that using this action:
 
 ```yaml
@@ -111,7 +111,7 @@ jobs:
             cp "${RUNNER_TEMP}/new-nvmrc" .nvmrc
           verify-script: |
             #!/usr/bin/env bash
- 
+
             # For this example, we don't need to do anything here. 
             # We can also omit this input altogether.
             exit 0
