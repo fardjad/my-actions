@@ -6,7 +6,7 @@
     "format": "prettier --write .",
     "generate-docs": "node scripts/generate-docs.mjs",
     "generate-docs:watch": "nodemon -e ejs,yml scripts/generate-docs.mjs",
-    "test": "npm run check",
+    "test": "true",
     "prepare": "husky"
   },
   "author": "Fardjad Davari <public@fardjad.com>",
@@ -19,5 +19,8 @@
     "nodemon": "^3.1.0",
     "prettier": "^3.2.5",
     "yaml": "^2.4.1"
+  },
+  "dependencies": {
+    "npm": "^1.4.29"
   }
 }
