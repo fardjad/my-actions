@@ -89,19 +89,19 @@ jobs:
         with:
           prepare-script: |
             #!/usr/bin/env bash
-            
+
             set -euo pipefail
 
-            cp .nvmrc "${RUNNER_TEMP}/old-nvmrc"
-            curl -s https://registry.npmjs.org/node | jq -r '.["dist-tags"]["latest"]' > "${RUNNER_TEMP}/new-nvmrc"
+            cp .nvmrc ${{ runner.temp }}/old-nvmrc
+            curl -s https://registry.npmjs.org/node | jq -r '.["dist-tags"]["latest"]' > "${{ runner.temp }}/new-nvmrc"
           check-script: |
             #!/usr/bin/env bash
 
             set -euo pipefail
-            
+
             current_version="$(cat .nvmrc)"
             new_version="$(cat ${RUNNER_TEMP}/new-nvmrc)"
-            
+
             [ "$current_version" == "$new_version" ] || exit 1
           change-script: |
             #!/usr/bin/env bash
@@ -111,7 +111,7 @@ jobs:
             cp "${RUNNER_TEMP}/new-nvmrc" .nvmrc
           verify-script: |
             #!/usr/bin/env bash
-            
+ 
             # For this example, we don't need to do anything here. 
             # We can also omit this input altogether.
             exit 0
@@ -126,7 +126,7 @@ jobs:
             git add .nvmrc
             cat <<EOF | git commit -F -
             Update Node.js version in .nvmrc
-            
+
             From ${old_version} to ${new_version}
             EOF
           github-token: ${{ secrets.GH_PAT }}

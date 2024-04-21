@@ -94,8 +94,8 @@ jobs:
 
             set -euo pipefail
 
-            cp .nvmrc "${RUNNER_TEMP}/old-nvmrc"
-            curl -s https://registry.npmjs.org/node | jq -r '.["dist-tags"]["latest"]' > "${RUNNER_TEMP}/new-nvmrc"
+            cp .nvmrc ${{ runner.temp }}/old-nvmrc
+            curl -s https://registry.npmjs.org/node | jq -r '.["dist-tags"]["latest"]' > "${{ runner.temp }}/new-nvmrc"
           check-script: |
             #!/usr/bin/env bash
 
