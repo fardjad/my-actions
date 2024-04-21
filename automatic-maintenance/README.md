@@ -94,15 +94,15 @@ jobs:
 
             set -euo pipefail
 
-            cp .nvmrc "${RUNNER_TEMP}/old-nvmrc"
-            curl -s https://registry.npmjs.org/node | jq -r '.["dist-tags"]["latest"]' > "${RUNNER_TEMP}/new-nvmrc"
+            cp .nvmrc ${{ runner.temp }}/old-nvmrc
+            curl -s https://registry.npmjs.org/node | jq -r '.["dist-tags"]["latest"]' > "${{ runner.temp }}/new-nvmrc"
           check-script: |
             #!/usr/bin/env bash
 
             set -euo pipefail
 
             current_version="$(cat .nvmrc)"
-            new_version="$(cat ${RUNNER_TEMP}/new-nvmrc)"
+            new_version="$(cat ${{ runner.temp }}/new-nvmrc)"
 
             [ "$current_version" == "$new_version" ] || exit 1
           change-script: |
@@ -110,7 +110,7 @@ jobs:
 
             set -euo pipefail
 
-            cp "${RUNNER_TEMP}/new-nvmrc" .nvmrc
+            cp "${{ runner.temp }}/new-nvmrc" .nvmrc
           verify-script: |
             #!/usr/bin/env bash
 
@@ -122,7 +122,7 @@ jobs:
 
             set -euo pipefail
 
-            old_version="$(cat ${RUNNER_TEMP}/old-nvmrc)"
+            old_version="$(cat ${{ runner.temp }}/old-nvmrc)"
             new_version="$(cat .nvmrc)"
 
             git add .nvmrc
