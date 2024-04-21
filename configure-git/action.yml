@@ -15,8 +15,6 @@ runs:
     - id: configure-git
       shell: bash
       run: |
-        set -euo pipefail
-
         git config --local user.name "${{ inputs.username }}"
         git config --local user.email "${{ inputs.email }}"
 

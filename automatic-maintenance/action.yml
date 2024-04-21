@@ -93,10 +93,6 @@ runs:
       if: steps.check.outputs.maintenance-needed == 'true'
       shell: bash
       run: |
-        #!/usr/bin/env bash
-
-        set -euo pipefail
-
         git checkout -b "${{ inputs.source-branch }}"
 
         echo "commit-hash=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
@@ -120,10 +116,6 @@ runs:
       if: steps.check.outputs.maintenance-needed == 'true'
       shell: bash
       run: |
-        #!/usr/bin/env bash
-
-        set -euo pipefail
-
         CURRENT_COMMIT_HASH="$(git rev-parse HEAD)"
 
         if [ "${CURRENT_COMMIT_HASH}" == "${PREVIOUS_COMMIT_HASH}" ]; then

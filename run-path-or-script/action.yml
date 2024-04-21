@@ -28,8 +28,6 @@ runs:
       id: check-if-path
       shell: bash
       run: |
-        set -euo pipefail
-
         # Check for the shebang
         if [[ $(echo "${INPUT_PATH_OR_SCRIPT}" | head -n 1) == "#!"* ]]; then
           echo "is-path=false" >> "${GITHUB_OUTPUT}"
@@ -53,8 +51,7 @@ runs:
     - name: Set paths for temporary files
       id: set-temp-paths
       shell: bash
-      run: set -euo pipefail
-
+      run: |
         PATH_PREFIX="${RUNNER_TEMP}/run-path-or-script-${{ github.run_id }}-${{ github.run_attempt }}"
 
         echo "path-prefix=${PATH_PREFIX}" >> "${GITHUB_OUTPUT}"
@@ -75,8 +72,6 @@ runs:
       id: normalize-script-path
       shell: bash
       run: |
-        set -euo pipefail
-
         if [ "${{ steps.check-if-path.outputs.is-path }}" == "true" ]; then
           echo "script-path=${INPUT_PATH_OR_SCRIPT}" >> "${GITHUB_OUTPUT}"
         else
@@ -120,6 +115,4 @@ runs:
       if: inputs.fail-on-non-zero-exit-code == 'true'
       shell: bash
       run: |
-        set -euo pipefail
-
         exit "${{ steps.run.outputs.exit-code }}"
