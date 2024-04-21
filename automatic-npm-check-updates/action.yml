@@ -1,5 +1,5 @@
 name: "Automatic npm-check-updates"
-description: "Automatically update npm dependencies with npm-check-updates."
+description: "Automatically update npm dependencies with `npm-check-updates`."
 author: "Fardjad Davari"
 inputs:
   source-branch:

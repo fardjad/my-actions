@@ -1,4 +1,4 @@
-name: "Run a script from the input or a path"
+name: "Run Path or Script"
 description: "A GitHub action to run a script from the input or a path."
 author: "Fardjad Davari"
 inputs:
