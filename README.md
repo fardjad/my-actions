@@ -1,6 +1,6 @@
 # My GitHub Actions
 
-This repository contains my GitHub Actions that I use in my projects.
+This repository contains my GitHub Actions.
 
 ## Actions
 

@@ -24,7 +24,7 @@ const inputsToMarkdownTable = (inputs) => {
       .join("<br>");
 
     tableLines.push(
-      `${input} | ${description} | ${required} | ${defaultValue}`
+      `${input} | ${description} | ${required} | <pre>${defaultValue}</pre>`
     );
   }
 

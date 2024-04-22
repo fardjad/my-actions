@@ -13,14 +13,14 @@ the list of updated packages.
 Variables ending with the suffix `-script` can either be a file path to a script
 or a multi-line string that starts with a shebang line.
 
-| Input                | Description                                                                                 | Required | Default                                                                                                                  |
-| -------------------- | ------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------ |
-| source-branch        | The branch to create the PR with changes from.                                              | No       | automatic-npm-check-updates                                                                                              |
-| target-branch        | The branch to merge the changes into. Defaults to `github.head_ref` or `github.ref_name`.   | No       | ${{ github.head_ref \|\| github.ref_name }}                                                                              |
-| github-token         | The GitHub PAT to use for creating, approving, and merging the PR with the changes.         | Yes      |
-| post-update-commands | The commands to run after updating the dependencies. They will be executed in a bash shell. | No       | npm install<br>npm audit fix --quiet --no-progress --no-fund \|\| true<br><br>npm version patch --no-git-tag-version<br> |
-| verify-script        | The script to run to verify the changes. This could be used to run tests, etc.              | No       | npm run test<br>                                                                                                         |
-| commit-title         | The commit title.                                                                           | No       | Upgrade dependencies                                                                                                     |
+| Input                | Description                                                                                 | Required | Default                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| source-branch        | The branch to create the PR with changes from.                                              | No       | <pre>automatic-npm-check-updates</pre>                                                                                              |
+| target-branch        | The branch to merge the changes into. Defaults to `github.head_ref` or `github.ref_name`.   | No       | <pre>${{ github.head_ref \|\| github.ref_name }}</pre>                                                                              |
+| github-token         | The GitHub PAT to use for creating, approving, and merging the PR with the changes.         | Yes      | <pre></pre>                                                                                                                         |
+| post-update-commands | The commands to run after updating the dependencies. They will be executed in a bash shell. | No       | <pre>npm install<br>npm audit fix --quiet --no-progress --no-fund \|\| true<br><br>npm version patch --no-git-tag-version<br></pre> |
+| verify-script        | The script to run to verify the changes. This could be used to run tests, etc.              | No       | <pre>npm run test<br></pre>                                                                                                         |
+| commit-title         | The commit title.                                                                           | No       | <pre>Upgrade dependencies</pre>                                                                                                     |
 
 ## Building Blocks
 
