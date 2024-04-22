@@ -1,0 +1,33 @@
+<%
+const yaml = await import("yaml");
+const fs = await import("fs");
+
+const action = yaml.parse(fs.readFileSync("action.yml", "utf-8"));
+%>
+
+# <%= action.name %>
+
+## Synopsis
+
+<%= action.description %>
+
+## Inputs
+
+<%- inputsToMarkdownTable(action.inputs) %>
+
+## Example Usage
+
+```yaml
+name: configure-git
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  configure-git:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - name: Configure Git
+        uses: fardjad/my-actions/configure-git@main
+```

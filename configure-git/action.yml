@@ -1,5 +1,5 @@
 name: "Configure Git"
-description: "A GitHub action to configure git for making changes to my repositories."
+description: "This action configures git for making changes to the repository."
 author: "Fardjad Davari"
 inputs:
   username:
@@ -20,5 +20,5 @@ runs:
 
         git config --local pull.rebase true
 
-        # work around "insufficient permission for adding an object to repository database .git/object" issue
+        # work around the "insufficient permission for adding an object to repository database .git/object" issue
         sudo chmod -R ugo+rwX .git
