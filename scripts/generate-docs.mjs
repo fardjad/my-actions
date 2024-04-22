@@ -31,6 +31,21 @@ const inputsToMarkdownTable = (inputs) => {
   return tableLines.join("\n");
 };
 
+const outputsToMarkdownTable = (outputs) => {
+  const tableLines = ["Output | Description ", "- | -"];
+
+  for (const [key, value] of Object.entries(outputs)) {
+    const output = key;
+    const description = escapeMarkdown(value.description ?? "")
+      .split("\n")
+      .join("<br>");
+
+    tableLines.push(`${output} | ${description}`);
+  }
+
+  return tableLines.join("\n");
+};
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const files = glob.sync("**/*.md.ejs", {
@@ -50,6 +65,7 @@ for (const file of files) {
     file,
     {
       inputsToMarkdownTable,
+      outputsToMarkdownTable,
     },
     { async: true }
   );

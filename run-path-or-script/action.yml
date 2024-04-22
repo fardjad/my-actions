@@ -1,25 +1,33 @@
 name: "Run Path or Script"
-description: "A GitHub action to run a script from the input or a path."
+description: >-
+  This action takes a string input and determines whether it's a file path or a 
+  script. If it's a file path, it executes the file found there. If it's a 
+  script, it runs the script.
 author: "Fardjad Davari"
 inputs:
   path-or-script:
-    description: "The path to the script or the script itself."
+    description: >-
+      The input string, which can be a file path or a script to execute.
     required: true
   fail-on-non-zero-exit-code:
-    description: "Whether to fail if the script exits with a non-zero code."
+    description: >-
+      Specifies whether the action should fail if the executed script returns 
+      a non-zero exit code.
     default: "true"
 outputs:
   is-path:
-    description: "Whether the input is a path or a script."
+    description: >-
+      Indicates whether the input was identified as a file path ("true") or a 
+      script ("false").
     value: "${{ steps.run.outputs.is-path }}"
   exit-code:
-    description: "The exit code of the script."
+    description: "The exit code returned by the executed script or file."
     value: "${{ steps.run.outputs.exit-code }}"
   stdout:
-    description: "The standard output of the script."
+    description: "The standard output produced by the executed script or file."
     value: "${{ steps.run.outputs.stdout }}"
   stderr:
-    description: "The standard error of the script."
+    description: "The standard error output from the executed script or file."
     value: "${{ steps.run.outputs.stderr }}"
 runs:
   using: "composite"
