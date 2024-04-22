@@ -1,0 +1,46 @@
+<%
+const yaml = await import("yaml");
+const fs = await import("fs");
+
+const action = yaml.parse(fs.readFileSync("action.yml", "utf-8"));
+%>
+
+# <%= action.name %>
+
+## Synopsis
+
+<%= action.description %>
+
+## Inputs
+
+<%- inputsToMarkdownTable(action.inputs) %>
+
+## Example Usage
+
+```yaml
+name: merge-commits
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  merge-commits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - name: Configure Git
+        uses: fardjad/my-actions/configure-git@main
+      - name: Make some changes
+        run: |
+          git checkout -b source-branch
+
+          echo "Hello, world!" > hello.txt
+          git add hello.txt
+          git commit -m "Add hello.txt"
+      - name: Merge Commits
+        uses: fardjad/my-actions/merge-commits@main
+        with:
+          source-branch: source-branch
+          target-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+```

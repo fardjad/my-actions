@@ -1,15 +1,19 @@
 name: "Merge Commits"
-description: "A GitHub action to merge the commits from a source branch into a target branch via a PR."
+description: >-
+  This action merges commits from a source branch into a target branch by 
+  automatically creating and approving a pull request.
 author: "Fardjad Davari"
 inputs:
   source-branch:
-    description: "The branch name to merge the commits from."
+    description: "The name of the branch to merge the commits from."
     required: true
   target-branch:
-    description: "The target branch to merge the commits into."
-    default: main
+    description: "The name of the branch to merge the commits into."
+    default: ${{ github.head_ref || github.ref_name }}
   github-token:
-    description: "The GitHub PAT to use for creating, approving, and merging the PR."
+    description: >-
+      The GitHub Personal Access Token to use for creating, approving, and 
+      merging the pull request.
     default: ${{ github.token }}
 outputs: {}
 runs:
