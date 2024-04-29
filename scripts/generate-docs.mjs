@@ -24,7 +24,7 @@ const inputsToMarkdownTable = (inputs) => {
       .join("<br>");
 
     tableLines.push(
-      `${input} | ${description} | ${required} | <pre>${defaultValue}</pre>`
+      `${input} | ${description} | ${required} | <pre>${defaultValue}</pre>`,
     );
   }
 
@@ -67,7 +67,7 @@ for (const file of files) {
       inputsToMarkdownTable,
       outputsToMarkdownTable,
     },
-    { async: true }
+    { async: true },
   );
 
   process.chdir(cwd);
