@@ -14,9 +14,9 @@
   "devDependencies": {
     "@types/node": "^22.14.1",
     "ejs": "^3.1.10",
-    "glob": "^11.0.1",
+    "glob": "^11.0.2",
     "husky": "^9.1.7",
-    "nodemon": "^3.1.9",
+    "nodemon": "^3.1.10",
     "prettier": "^3.5.3",
     "yaml": "^2.7.1"
   }
