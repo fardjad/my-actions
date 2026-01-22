@@ -12,12 +12,12 @@
   "author": "Fardjad Davari <public@fardjad.com>",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^25.0.9",
+    "@types/node": "^25.0.10",
     "ejs": "^4.0.1",
     "glob": "^13.0.0",
     "husky": "^9.1.7",
     "nodemon": "^3.1.11",
-    "prettier": "^3.8.0",
+    "prettier": "^3.8.1",
     "yaml": "^2.8.2"
   }
 }
