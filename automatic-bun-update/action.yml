@@ -1,0 +1,86 @@
+name: "Automatic Bun Update"
+description: >-
+  This action provides an _opinionated workflow_ for updating dependencies in a
+  Bun project.
+author: "Fardjad Davari"
+inputs:
+  source-branch:
+    description: "The branch to create the PR with changes from."
+    default: "automatic-bun-update"
+  target-branch:
+    description: >-
+      The branch to merge the changes into. Defaults to `github.head_ref` or
+      `github.ref_name`.
+    default: "${{ github.head_ref || github.ref_name }}"
+  github-token:
+    description: >-
+      The GitHub PAT to use for creating, approving, and merging the PR with
+      the changes.
+    required: true
+  upgrade-options:
+    description: >-
+      The options to pass to `bun update`. This value is appended verbatim to
+      the command so it can include flags such as `--latest`, `--production`,
+      or package selectors.
+    default: "--latest"
+  post-update-commands:
+    description: >-
+      The commands to run after updating the dependencies. They will be
+      executed in a bash shell.
+    default: |
+      bun audit || true
+  verify-script:
+    description: >-
+      The script to run to verify the changes. This could be used to run
+      tests, etc.
+    default: |
+      bun run test
+  commit-title:
+    description: "The commit title."
+    default: "Upgrade dependencies"
+outputs: {}
+runs:
+  using: "composite"
+  steps:
+    - name: Check the dependencies
+      shell: bash
+      run: |
+        command -v bun >/dev/null || exit 1
+    - name: Automatic maintenance
+      uses: fardjad/my-actions/automatic-maintenance@main
+      with:
+        source-branch: ${{ inputs.source-branch }}
+        target-branch: ${{ inputs.target-branch }}
+        github-token: ${{ inputs.github-token }}
+        check-script: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          bun "${{ github.action_path }}/scripts/check-updates.mjs" "${{ github.workspace }}" "${{ inputs.upgrade-options }}"
+        change-script: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          snapshot_dir="${{ runner.temp }}/automatic-bun-update-before"
+          rm -rf "${snapshot_dir}"
+          bun "${{ github.action_path }}/scripts/snapshot-manifests.mjs" "${{ github.workspace }}" "${snapshot_dir}"
+
+          bun update ${{ inputs.upgrade-options }}
+
+          ${{ inputs.post-update-commands }}
+        verify-script: ${{ inputs.verify-script }}
+        commit-script: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+
+          git add -u .
+          git add bun.lock bun.lockb 2>/dev/null || true
+          update_summary="$(bun "${{ github.action_path }}/scripts/render-update-summary.mjs" "${{ runner.temp }}/automatic-bun-update-before" "${{ github.workspace }}")"
+          cat <<COMMIT_SCRIPT_EOF | git commit -F -
+          ${{ inputs.commit-title }}
+
+          ${update_summary}
+          COMMIT_SCRIPT_EOF

@@ -1,0 +1,27 @@
+name: automatic-bun-update
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  automatic-bun-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: oven-sh/setup-bun@main
+        with:
+          bun-version: latest
+      - name: Cache Bun packages
+        uses: actions/cache@main
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock', '**/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+      - uses: fardjad/my-actions/automatic-bun-update@main
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          post-update-commands: |
+            bun run format

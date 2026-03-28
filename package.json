@@ -4,9 +4,9 @@
   "scripts": {
     "check": "prettier -c .",
     "format": "prettier --write .",
-    "generate-docs": "node scripts/generate-docs.mjs",
-    "generate-docs:watch": "nodemon -e ejs,yml scripts/generate-docs.mjs",
-    "test": "npm run check",
+    "generate-docs": "bun scripts/generate-docs.mjs",
+    "generate-docs:watch": "nodemon -e ejs,yml --exec \"bun scripts/generate-docs.mjs\"",
+    "test": "bun run check",
     "prepare": "husky"
   },
   "author": "Fardjad Davari <public@fardjad.com>",

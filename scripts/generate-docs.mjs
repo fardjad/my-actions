@@ -1,4 +1,4 @@
-import { renderFile } from "ejs";
+import ejs from "ejs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { glob } from "glob";
@@ -61,7 +61,7 @@ for (const file of files) {
   const cwd = process.cwd();
   process.chdir(path.dirname(targetFile));
 
-  const content = await renderFile(
+  const content = await ejs.renderFile(
     file,
     {
       inputsToMarkdownTable,

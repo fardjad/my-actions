@@ -1,13 +1,24 @@
-bash <<EOF
-ROOT="$(dirname "$0")/.."
-DIR="$PWD"
+#!/usr/bin/env sh
+set -eu
+
+ROOT="$(git rev-parse --show-toplevel)"
+DIR="$(pwd)"
+
 cd "$ROOT"
+
 if [ -f .commit ]; then
     rm .commit
-    npm run generate-docs
+
+    if ! command -v bun >/dev/null 2>&1; then
+        echo "bun is required for the post-commit hook." >&2
+        exit 1
+    fi
+
+    bun run generate-docs
+
     git add README.md
     git add */README.md
-    git commit --amend -C HEAD --no-verify
+    HUSKY=0 git commit --amend -C HEAD --no-verify
 fi
+
 cd "$DIR"
-EOF

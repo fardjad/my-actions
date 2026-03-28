@@ -1,7 +1,9 @@
-bash <<EOF
-ROOT="$(dirname "$0")/.."
-DIR="$PWD"
+#!/usr/bin/env sh
+set -eu
+
+ROOT="$(git rev-parse --show-toplevel)"
+DIR="$(pwd)"
+
 cd "$ROOT"
 touch ".commit"
 cd "$DIR"
-EOF
