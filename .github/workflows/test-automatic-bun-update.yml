@@ -1,0 +1,65 @@
+name: test-automatic-bun-update
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "automatic-bun-update/**"
+
+env:
+  TEST_SOURCE_BRANCH: test-automatic-bun-update-source
+  TEST_TARGET_BRANCH: test-automatic-bun-update-target
+  TEST_MINIMUM_RELEASE_AGE_DAYS: "7"
+
+jobs:
+  test-automatic-bun-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - uses: oven-sh/setup-bun@main
+        with:
+          bun-version: latest
+      - uses: fardjad/my-actions/configure-git@main
+      - name: Setup
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
+          git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true
+
+          git checkout -b "${{ env.TEST_TARGET_BRANCH }}"
+
+          bun add npm@latest-1 -d
+
+          git add .
+          git commit -m "Add npm@latest-1 as a Bun dependency"
+          git push origin "${{ env.TEST_TARGET_BRANCH }}"
+      - name: Test
+        uses: fardjad/my-actions/automatic-bun-update@main
+        with:
+          source-branch: ${{ env.TEST_SOURCE_BRANCH }}
+          target-branch: ${{ env.TEST_TARGET_BRANCH }}
+          github-token: ${{ secrets.GH_PAT }}
+          minimum-release-age-days: ${{ env.TEST_MINIMUM_RELEASE_AGE_DAYS }}
+      - name: Assertion
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          bunfig_dir="${{ runner.temp }}/test-automatic-bun-update-bunfig"
+          rm -rf "${bunfig_dir}"
+          mkdir -p "${bunfig_dir}"
+          printf '[install]\nminimumReleaseAge = %s\n' \
+            "$(( ${{ env.TEST_MINIMUM_RELEASE_AGE_DAYS }} * 24 * 60 * 60 ))" \
+            > "${bunfig_dir}/.bunfig.toml"
+          export XDG_CONFIG_HOME="${bunfig_dir}"
+
+          bun automatic-bun-update/scripts/check-updates.mjs "${GITHUB_WORKSPACE}" "--latest"
+      - name: Cleanup
+        if: always()
+        run: |
+          set -euo pipefail
+
+          git push origin --delete "${{ env.TEST_SOURCE_BRANCH }}" || true
+          git push origin --delete "${{ env.TEST_TARGET_BRANCH }}" || true
