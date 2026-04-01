@@ -9,6 +9,7 @@ on:
 env:
   TEST_SOURCE_BRANCH: test-automatic-npm-check-updates-source
   TEST_TARGET_BRANCH: test-automatic-npm-check-updates-target
+  TEST_MINIMUM_RELEASE_AGE_DAYS: "7"
 
 jobs:
   test-automatic-npm-check-updates:
@@ -19,17 +20,6 @@ jobs:
         with:
           node-version: "lts/*"
           check-latest: true
-      - name: Cache node modules
-        uses: actions/cache@main
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
       - uses: fardjad/my-actions/configure-git@main
       - name: Setup
         shell: bash
@@ -62,12 +52,11 @@ jobs:
           source-branch: ${{ env.TEST_SOURCE_BRANCH }}
           target-branch: ${{ env.TEST_TARGET_BRANCH }}
           github-token: ${{ secrets.GH_PAT }}
-          change-script: |
-            npm install
+          minimum-release-age-days: ${{ env.TEST_MINIMUM_RELEASE_AGE_DAYS }}
       - name: Assertion
         shell: bash
         run: |
-          npm-check-updates --errorLevel 2
+          npm-check-updates --cooldown "${{ env.TEST_MINIMUM_RELEASE_AGE_DAYS }}d" --errorLevel 2
       - name: Cleanup
         if: always()
         run: |

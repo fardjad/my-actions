@@ -17,12 +17,16 @@ inputs:
       The GitHub PAT to use for creating, approving, and merging the PR with 
       the changes.
     required: true
+  minimum-release-age-days:
+    description: >-
+      The minimum age, in days, that a package version must reach before npm
+      can install it or npm-check-updates can select it.
+    default: 7
   post-update-commands:
     description: >-
       The commands to run after updating the dependencies. They will be 
       executed in a bash shell.
     default: |
-      npm install
       npm audit fix --quiet --no-progress --no-fund || true
 
       npm version patch --no-git-tag-version
@@ -70,13 +74,21 @@ runs:
 
           set -euo pipefail
 
-          npm-check-updates --errorLevel 2
+          minimum_release_age_days="${{ inputs.minimum-release-age-days }}"
+          export npm_config_min_release_age="${minimum_release_age_days}"
+
+          npm-check-updates --cooldown "${minimum_release_age_days}d" --errorLevel 2
         change-script: |
           #!/usr/bin/env bash
 
           set -euo pipefail
 
-          npm-check-updates -u --jsonUpgraded > "${{ runner.temp }}/upgraded.json"
+          minimum_release_age_days="${{ inputs.minimum-release-age-days }}"
+          export npm_config_min_release_age="${minimum_release_age_days}"
+
+          npm install --min-release-age="${minimum_release_age_days}"
+
+          npm-check-updates --cooldown "${minimum_release_age_days}d" -u --jsonUpgraded > "${{ runner.temp }}/upgraded.json"
 
           ${{ inputs.post-update-commands }}
         verify-script: ${{ inputs.verify-script }}

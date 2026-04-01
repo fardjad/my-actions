@@ -5,7 +5,7 @@ import { glob } from "glob";
 import fs from "node:fs";
 import { format } from "prettier";
 
-const escapeMarkdown = (text) => text.replace(/(\|)/g, "\\$1");
+const escapeMarkdown = (text) => String(text).replace(/(\|)/g, "\\$1");
 
 const inputsToMarkdownTable = (inputs) => {
   const tableLines = [

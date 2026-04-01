@@ -13,7 +13,8 @@ const action = yaml.parse(fs.readFileSync("action.yml", "utf-8"));
 
 By default, this action upgrades the dependencies in the `package.json` file
 with `bun update --latest` and merges the changes to the target branch with a
-commit message that includes the upgraded packages.
+commit message that includes the upgraded packages. Versions newer than the
+configured minimum release age are ignored during update and install steps.
 
 ## Inputs
 

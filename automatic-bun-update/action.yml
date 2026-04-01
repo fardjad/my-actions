@@ -23,6 +23,11 @@ inputs:
       the command so it can include flags such as `--latest`, `--production`,
       or package selectors.
     default: "--latest"
+  minimum-release-age-days:
+    description: >-
+      The minimum age, in days, that a package version must reach before Bun
+      can install or update it.
+    default: 7
   post-update-commands:
     description: >-
       The commands to run after updating the dependencies. They will be
@@ -57,11 +62,29 @@ runs:
 
           set -euo pipefail
 
+          minimum_release_age_days="${{ inputs.minimum-release-age-days }}"
+          bunfig_dir="${{ runner.temp }}/automatic-bun-update-bunfig"
+          rm -rf "${bunfig_dir}"
+          mkdir -p "${bunfig_dir}"
+          printf '[install]\nminimumReleaseAge = %s\n' \
+            "$((minimum_release_age_days * 24 * 60 * 60))" \
+            > "${bunfig_dir}/.bunfig.toml"
+          export XDG_CONFIG_HOME="${bunfig_dir}"
+
           bun "${{ github.action_path }}/scripts/check-updates.mjs" "${{ github.workspace }}" "${{ inputs.upgrade-options }}"
         change-script: |
           #!/usr/bin/env bash
 
           set -euo pipefail
+
+          minimum_release_age_days="${{ inputs.minimum-release-age-days }}"
+          bunfig_dir="${{ runner.temp }}/automatic-bun-update-bunfig"
+          rm -rf "${bunfig_dir}"
+          mkdir -p "${bunfig_dir}"
+          printf '[install]\nminimumReleaseAge = %s\n' \
+            "$((minimum_release_age_days * 24 * 60 * 60))" \
+            > "${bunfig_dir}/.bunfig.toml"
+          export XDG_CONFIG_HOME="${bunfig_dir}"
 
           snapshot_dir="${{ runner.temp }}/automatic-bun-update-before"
           rm -rf "${snapshot_dir}"
