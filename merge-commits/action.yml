@@ -12,9 +12,28 @@ inputs:
     default: ${{ github.head_ref || github.ref_name }}
   github-token:
     description: >-
-      The GitHub Personal Access Token to use for creating, approving, and 
-      merging the pull request.
+      The GitHub token to use for creating the pull request and, by default,
+      merging it.
     default: ${{ github.token }}
+  approve-pr:
+    description: >-
+      Whether to approve the pull request before merging it. This should only
+      be enabled when the approval identity is different from the pull request
+      author.
+    default: "false"
+  merge-pr:
+    description: "Whether to merge the pull request after creating it."
+    default: "true"
+  approve-token:
+    description: >-
+      Optional GitHub token to use for approving the pull request. Defaults to
+      `github-token` when omitted.
+    default: ""
+  merge-token:
+    description: >-
+      Optional GitHub token to use for merging the pull request. Defaults to
+      `github-token` when omitted.
+    default: ""
 outputs: {}
 runs:
   using: "composite"
@@ -34,13 +53,25 @@ runs:
         PR_URL=$(gh pr create -B "${{ inputs.target-branch }}" -H "${{ inputs.source-branch }}" -f)
         echo "pr-url=${PR_URL}" >> $GITHUB_OUTPUT
       env:
-        GH_TOKEN: ${{ github.token }}
+        GH_TOKEN: ${{ inputs.github-token }}
     - id: approve-and-merge-pr
       if: steps.create-pr.outputs.pr-url
       shell: bash
       run: |
-        gh pr review --approve "${PR_URL}"
-        gh pr merge --auto --delete-branch --rebase "${PR_URL}"
+        APPROVE_TOKEN="${INPUT_APPROVE_TOKEN:-$INPUT_GITHUB_TOKEN}"
+        MERGE_TOKEN="${INPUT_MERGE_TOKEN:-$INPUT_GITHUB_TOKEN}"
+
+        if [ "${INPUT_APPROVE_PR}" == "true" ]; then
+          GH_TOKEN="${APPROVE_TOKEN}" gh pr review --approve "${PR_URL}"
+        fi
+
+        if [ "${INPUT_MERGE_PR}" == "true" ]; then
+          GH_TOKEN="${MERGE_TOKEN}" gh pr merge --auto --delete-branch --rebase "${PR_URL}"
+        fi
       env:
-        GH_TOKEN: ${{ inputs.github-token }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_APPROVE_PR: ${{ inputs.approve-pr }}
+        INPUT_MERGE_PR: ${{ inputs.merge-pr }}
+        INPUT_APPROVE_TOKEN: ${{ inputs.approve-token }}
+        INPUT_MERGE_TOKEN: ${{ inputs.merge-token }}
         PR_URL: ${{ steps.create-pr.outputs.pr-url }}
