@@ -41,7 +41,8 @@ jobs:
           echo "commit-sha=${COMMIT_SHA}" >> "${GITHUB_OUTPUT}"
       - uses: fardjad/my-actions/merge-commits@main
         with:
-          github-token: ${{ secrets.GH_PAT }}
+          github-token: ${{ github.token }}
+          approve-pr: "false"
           source-branch: "${{ env.TEST_SOURCE_BRANCH }}"
           target-branch: "${{ env.TEST_TARGET_BRANCH }}"
       - name: test-merge-commits
