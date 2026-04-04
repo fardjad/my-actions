@@ -2,15 +2,19 @@
 
 ## Synopsis
 
-This action merges commits from a source branch into a target branch by automatically creating and approving a pull request.
+This action merges commits from a source branch into a target branch by creating a pull request and optionally approving it before merging.
 
 ## Inputs
 
-| Input         | Description                                                                                    | Required | Default                                                |
-| ------------- | ---------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------ |
-| source-branch | The name of the branch to merge the commits from.                                              | Yes      | <pre></pre>                                            |
-| target-branch | The name of the branch to merge the commits into.                                              | No       | <pre>${{ github.head_ref \|\| github.ref_name }}</pre> |
-| github-token  | The GitHub Personal Access Token to use for creating, approving, and merging the pull request. | No       | <pre>${{ github.token }}</pre>                         |
+| Input         | Description                                                                                                                                              | Required | Default                                                |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------ |
+| source-branch | The name of the branch to merge the commits from.                                                                                                        | Yes      | <pre></pre>                                            |
+| target-branch | The name of the branch to merge the commits into.                                                                                                        | No       | <pre>${{ github.head_ref \|\| github.ref_name }}</pre> |
+| github-token  | The GitHub token to use for creating the pull request and, by default, merging it.                                                                       | No       | <pre>${{ github.token }}</pre>                         |
+| approve-pr    | Whether to approve the pull request before merging it. This should only be enabled when the approval identity is different from the pull request author. | No       | <pre>false</pre>                                       |
+| merge-pr      | Whether to merge the pull request after creating it.                                                                                                     | No       | <pre>true</pre>                                        |
+| approve-token | Optional GitHub token to use for approving the pull request. Defaults to `github-token` when omitted.                                                    | No       | <pre></pre>                                            |
+| merge-token   | Optional GitHub token to use for merging the pull request. Defaults to `github-token` when omitted.                                                      | No       | <pre></pre>                                            |
 
 ## Example Usage
 

@@ -70,7 +70,8 @@ jobs:
             touch "${{ env.TEST_COMMIT_FILE }}"
             exit 0
           target-branch: ${{ env.TEST_TARGET_BRANCH }}
-          github-token: ${{ secrets.GH_PAT }}
+          github-token: ${{ github.token }}
+          approve-pr: "false"
       - name: Assertion
         shell: bash
         run: |
