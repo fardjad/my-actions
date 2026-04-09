@@ -54,8 +54,8 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@main
         with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
       - uses: oven-sh/setup-bun@main
         with:
           bun-version: latest

@@ -1,0 +1,64 @@
+name: prepare-repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: Target repository in owner/repo form
+        required: true
+        type: string
+      default-branch:
+        description: Branch to protect
+        required: false
+        default: main
+        type: string
+      required-status-checks:
+        description: Comma-separated required status check names. Leave empty to leave required status checks unmanaged.
+        required: false
+        default: ""
+        type: string
+      extra-allowed-actions-patterns:
+        description: Comma-separated additional allowed action or reusable workflow patterns, for example owner/action@*
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  prepare-repo:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@main
+      - name: Parse target repository
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          repo="${{ inputs.repository }}"
+          owner="${repo%/*}"
+          name="${repo#*/}"
+
+          echo "owner=${owner}" >> "${GITHUB_OUTPUT}"
+          echo "name=${name}" >> "${GITHUB_OUTPUT}"
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@main
+        with:
+          app-id: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
+          owner: ${{ steps.target.outputs.owner }}
+          repositories: ${{ steps.target.outputs.name }}
+      - name: Prepare repository
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SOURCE_APP_ID: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
+          SOURCE_APP_PRIVATE_KEY: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
+        run: |
+          python3 scripts/prepare-repo.py \
+            "${{ inputs.repository }}" \
+            --default-branch "${{ inputs.default-branch }}" \
+            --force-push-login "fardjad" \
+            --required-status-checks "${{ inputs.required-status-checks }}" \
+            --extra-allowed-actions-patterns "${{ inputs.extra-allowed-actions-patterns }}"
