@@ -3,16 +3,32 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import subprocess
 import sys
 from dataclasses import dataclass
+from pathlib import Path
+from urllib.parse import quote, urlencode
 
 API_HEADERS = [
     "Accept: application/vnd.github+json",
     "X-GitHub-Api-Version: 2026-03-10",
 ]
+REPO_ROOT = Path(__file__).resolve().parent.parent
+APPROVAL_WORKFLOW_REPO_PATH = ".github/workflows/approve-auto-maintenance-prs.yml"
+APPROVAL_WORKFLOW_SOURCE_PATH = REPO_ROOT / APPROVAL_WORKFLOW_REPO_PATH
+APPROVAL_WORKFLOW_BRANCH = "auto-maintenance/approve-auto-maintenance-prs"
+APPROVAL_WORKFLOW_COMMIT_MESSAGE = "Add auto-maintenance approval workflow"
+APPROVAL_WORKFLOW_PR_TITLE = "Add auto-maintenance approval workflow"
+APPROVAL_WORKFLOW_PR_BODY = """## Summary
+
+- add the auto-maintenance approval workflow
+- approve pull requests opened by the auto-maintenance app
+
+This PR was created by `prepare-repo.py`.
+"""
 
 
 def fail(message: str) -> None:
@@ -25,12 +41,13 @@ def run(
     *,
     input_text: str | None = None,
     capture_output: bool = True,
+    check: bool = True,
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         args,
         input=input_text,
         text=True,
-        check=True,
+        check=check,
         capture_output=capture_output,
     )
 
@@ -40,7 +57,7 @@ def gh_api(
     *,
     method: str | None = None,
     body: dict | None = None,
-) -> dict:
+) -> object:
     args = ["gh", "api"]
 
     for header in API_HEADERS:
@@ -58,6 +75,39 @@ def gh_api(
         input_text = json.dumps(body)
 
     result = run(args, input_text=input_text)
+
+    if not result.stdout.strip():
+        return {}
+
+    return json.loads(result.stdout)
+
+
+def gh_api_optional(
+    endpoint: str,
+    *,
+    method: str | None = None,
+    body: dict | None = None,
+) -> object | None:
+    args = ["gh", "api"]
+
+    for header in API_HEADERS:
+        args.extend(["-H", header])
+
+    if method:
+        args.extend(["--method", method])
+
+    args.append(endpoint)
+
+    input_text = None
+
+    if body is not None:
+        args.extend(["--input", "-"])
+        input_text = json.dumps(body)
+
+    result = run(args, input_text=input_text, check=False)
+
+    if result.returncode != 0:
+        return None
 
     if not result.stdout.strip():
         return {}
@@ -113,6 +163,175 @@ def parse_target_repo(value: str) -> TargetRepo:
     return TargetRepo(owner=owner, name=name)
 
 
+def encode_path(path: str) -> str:
+    return quote(path, safe="/")
+
+
+def read_approval_workflow_template() -> str:
+    return APPROVAL_WORKFLOW_SOURCE_PATH.read_text(encoding="utf-8")
+
+
+def get_repo_file(target: TargetRepo, path: str, *, ref: str) -> dict | None:
+    query = urlencode({"ref": ref})
+    file_data = gh_api_optional(
+        f"repos/{target.owner}/{target.name}/contents/{encode_path(path)}?{query}"
+    )
+
+    if not isinstance(file_data, dict):
+        return None
+
+    return file_data
+
+
+def decode_repo_file(file_data: dict) -> str:
+    encoded_content = file_data.get("content", "")
+    encoding = file_data.get("encoding")
+
+    if encoding != "base64":
+        fail(f"Unsupported repository file encoding: {encoding}")
+
+    return base64.b64decode(encoded_content).decode("utf-8")
+
+
+def ensure_branch(target: TargetRepo, *, base_branch: str, branch: str) -> None:
+    existing_ref = gh_api_optional(
+        f"repos/{target.owner}/{target.name}/git/ref/heads/{encode_path(branch)}"
+    )
+
+    if existing_ref is not None:
+        return
+
+    base_ref = gh_api(f"repos/{target.owner}/{target.name}/git/ref/heads/{encode_path(base_branch)}")
+
+    if not isinstance(base_ref, dict):
+        fail(f"Could not resolve base branch {base_branch}")
+
+    print(f"Creating branch {branch} from {base_branch}")
+    gh_api(
+        f"repos/{target.owner}/{target.name}/git/refs",
+        method="POST",
+        body={
+            "ref": f"refs/heads/{branch}",
+            "sha": base_ref["object"]["sha"],
+        },
+    )
+
+
+def put_repo_file(
+    target: TargetRepo,
+    *,
+    path: str,
+    branch: str,
+    content: str,
+    message: str,
+    sha: str | None = None,
+) -> None:
+    body = {
+        "message": message,
+        "branch": branch,
+        "content": base64.b64encode(content.encode("utf-8")).decode("ascii"),
+    }
+
+    if sha:
+        body["sha"] = sha
+
+    gh_api(
+        f"repos/{target.owner}/{target.name}/contents/{encode_path(path)}",
+        method="PUT",
+        body=body,
+    )
+
+
+def find_open_pull_request(target: TargetRepo, *, head_branch: str, base_branch: str) -> dict | None:
+    query = urlencode(
+        {
+            "state": "open",
+            "head": f"{target.owner}:{head_branch}",
+            "base": base_branch,
+        }
+    )
+    pull_requests = gh_api(f"repos/{target.owner}/{target.name}/pulls?{query}")
+
+    if not isinstance(pull_requests, list) or not pull_requests:
+        return None
+
+    return pull_requests[0]
+
+
+def ensure_pull_request(target: TargetRepo, *, head_branch: str, base_branch: str) -> str:
+    existing_pr = find_open_pull_request(target, head_branch=head_branch, base_branch=base_branch)
+
+    if existing_pr is not None:
+        print(f"Approval workflow pull request already exists: {existing_pr['html_url']}")
+        return existing_pr["html_url"]
+
+    print("Creating approval workflow pull request")
+    pull_request = gh_api(
+        f"repos/{target.owner}/{target.name}/pulls",
+        method="POST",
+        body={
+            "title": APPROVAL_WORKFLOW_PR_TITLE,
+            "head": head_branch,
+            "base": base_branch,
+            "body": APPROVAL_WORKFLOW_PR_BODY,
+        },
+    )
+
+    if not isinstance(pull_request, dict):
+        fail("Could not create approval workflow pull request")
+
+    return pull_request["html_url"]
+
+
+def ensure_approval_workflow_pull_request(
+    target: TargetRepo,
+    *,
+    default_branch: str,
+    overwrite: bool,
+) -> ApprovalWorkflowResult:
+    template_content = read_approval_workflow_template()
+    default_branch_file = get_repo_file(target, APPROVAL_WORKFLOW_REPO_PATH, ref=default_branch)
+
+    if default_branch_file is not None:
+        current_content = decode_repo_file(default_branch_file)
+
+        if current_content == template_content:
+            print("Approval workflow already matches the template on the protected branch")
+            return ApprovalWorkflowResult(status="already-present")
+
+        if not overwrite:
+            print("Approval workflow already exists; leaving it unchanged")
+            return ApprovalWorkflowResult(status="already-present")
+
+    ensure_branch(
+        target,
+        base_branch=default_branch,
+        branch=APPROVAL_WORKFLOW_BRANCH,
+    )
+
+    branch_file = get_repo_file(target, APPROVAL_WORKFLOW_REPO_PATH, ref=APPROVAL_WORKFLOW_BRANCH)
+
+    if branch_file is not None and decode_repo_file(branch_file) == template_content:
+        print("Approval workflow branch already contains the desired content")
+    else:
+        print("Writing approval workflow template to the target repository branch")
+        put_repo_file(
+            target,
+            path=APPROVAL_WORKFLOW_REPO_PATH,
+            branch=APPROVAL_WORKFLOW_BRANCH,
+            content=template_content,
+            message=APPROVAL_WORKFLOW_COMMIT_MESSAGE,
+            sha=branch_file.get("sha") if branch_file is not None else None,
+        )
+
+    pr_url = ensure_pull_request(
+        target,
+        head_branch=APPROVAL_WORKFLOW_BRANCH,
+        base_branch=default_branch,
+    )
+    return ApprovalWorkflowResult(status="pull-request-opened", pr_url=pr_url)
+
+
 @dataclass
 class Config:
     target: TargetRepo
@@ -122,6 +341,14 @@ class Config:
     source_app_private_key: str
     extra_allowed_patterns: list[str]
     required_status_checks: list[str]
+    skip_approval_workflow_pr: bool
+    overwrite_approval_workflow_pr: bool
+
+
+@dataclass
+class ApprovalWorkflowResult:
+    status: str
+    pr_url: str | None = None
 
 
 def env_first(*names: str) -> str:
@@ -189,6 +416,22 @@ def build_argument_parser() -> argparse.ArgumentParser:
         "--source-app-private-key-file",
         help="Path to a file containing the app private key PEM to copy into the target repository secret.",
     )
+    parser.add_argument(
+        "--skip-approval-workflow-pr",
+        action="store_true",
+        help=(
+            "Skip opening a pull request to add "
+            f"{APPROVAL_WORKFLOW_REPO_PATH} to the target repository."
+        ),
+    )
+    parser.add_argument(
+        "--overwrite-approval-workflow-pr",
+        action="store_true",
+        help=(
+            "Open a pull request to replace the target repository's "
+            f"{APPROVAL_WORKFLOW_REPO_PATH} with this repository's template even if it already exists."
+        ),
+    )
 
     return parser
 
@@ -226,6 +469,8 @@ def parse_args(argv: list[str] | None = None) -> Config:
         source_app_private_key=source_app_private_key,
         extra_allowed_patterns=parse_csv_list(args.extra_allowed_actions_patterns),
         required_status_checks=parse_csv_list(args.required_status_checks),
+        skip_approval_workflow_pr=args.skip_approval_workflow_pr,
+        overwrite_approval_workflow_pr=args.overwrite_approval_workflow_pr,
     )
 
 
@@ -424,6 +669,16 @@ def main(argv: list[str] | None = None) -> None:
         config.source_app_private_key,
     )
 
+    if config.skip_approval_workflow_pr:
+        print("Skipping approval workflow pull request")
+        approval_workflow_result = ApprovalWorkflowResult(status="skipped")
+    else:
+        approval_workflow_result = ensure_approval_workflow_pull_request(
+            config.target,
+            default_branch=config.default_branch,
+            overwrite=config.overwrite_approval_workflow_pr,
+        )
+
     append_step_summary(
         f"""## Prepared {config.target.full_name}
 
@@ -440,6 +695,11 @@ def main(argv: list[str] | None = None) -> None:
 ```
 {chr(10).join(config.required_status_checks) if config.required_status_checks else "(not configured)"}
 ```
+
+### Approval workflow PR
+
+- Status: {approval_workflow_result.status}
+{f"- Pull request: {approval_workflow_result.pr_url}" if approval_workflow_result.pr_url else ""}
 
 ### Notes
 

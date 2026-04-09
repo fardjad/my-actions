@@ -22,6 +22,16 @@ on:
         required: false
         default: ""
         type: string
+      skip-approval-workflow-pr:
+        description: Skip opening a pull request that adds the auto-maintenance approval workflow to the target repository.
+        required: false
+        default: false
+        type: boolean
+      overwrite-approval-workflow-pr:
+        description: Replace an existing auto-maintenance approval workflow in the target repository by opening a pull request.
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   prepare-repo:
@@ -56,9 +66,22 @@ jobs:
           SOURCE_APP_ID: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
           SOURCE_APP_PRIVATE_KEY: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
         run: |
-          python3 scripts/prepare-repo.py \
-            "${{ inputs.repository }}" \
-            --default-branch "${{ inputs.default-branch }}" \
-            --force-push-login "fardjad" \
-            --required-status-checks "${{ inputs.required-status-checks }}" \
+          set -euo pipefail
+
+          args=(
+            "${{ inputs.repository }}"
+            --default-branch "${{ inputs.default-branch }}"
+            --force-push-login "fardjad"
+            --required-status-checks "${{ inputs.required-status-checks }}"
             --extra-allowed-actions-patterns "${{ inputs.extra-allowed-actions-patterns }}"
+          )
+
+          if [[ "${{ inputs.skip-approval-workflow-pr }}" == "true" ]]; then
+            args+=(--skip-approval-workflow-pr)
+          fi
+
+          if [[ "${{ inputs.overwrite-approval-workflow-pr }}" == "true" ]]; then
+            args+=(--overwrite-approval-workflow-pr)
+          fi
+
+          python3 scripts/prepare-repo.py "${args[@]}"

@@ -1,4 +1,4 @@
-name: approve-app-prs
+name: approve-auto-maintenance-prs
 
 on:
   pull_request_target:
@@ -11,7 +11,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  approve-app-prs:
+  approve-auto-maintenance-prs:
     runs-on: ubuntu-latest
     steps:
       - name: Resolve app slug

@@ -32,6 +32,11 @@ merge:
 - `Administration: Read and write`
 - `Secrets: Read and write`
 - `Variables: Read and write`
+- `Workflows: Read and write`
+
+`Workflows: Read and write` is needed because `prepare-repo` can open a pull
+request that adds or updates
+`.github/workflows/approve-auto-maintenance-prs.yml` in the target repository.
 
 ### 2. Use the App in Update Workflows
 
@@ -82,7 +87,7 @@ Repository requirements:
 Example approval workflow:
 
 ```yaml
-name: approve-app-prs
+name: approve-auto-maintenance-prs
 
 on:
   pull_request_target:
@@ -142,6 +147,13 @@ calls, and it copies `SOURCE_APP_ID` / `SOURCE_APP_PRIVATE_KEY` into the target
 repository as `AUTO_MAINTENANCE_APP_ID` and
 `AUTO_MAINTENANCE_APP_PRIVATE_KEY`.
 
+By default, it also opens a pull request in the target repository that adds
+[`approve-auto-maintenance-prs.yml`](.github/workflows/approve-auto-maintenance-prs.yml)
+if the file does not already exist there. Use `--overwrite-approval-workflow-pr`
+to replace an existing file, or `--skip-approval-workflow-pr` to disable that
+step. That step requires the GitHub App to have `Workflows: Read and write` on
+the target repository.
+
 It configures:
 
 - rebase merge only
@@ -160,6 +172,10 @@ Workflow inputs:
   workflow leaves required status checks unmanaged
 - `extra-allowed-actions-patterns`: comma-separated additional allowed action or
   reusable workflow patterns such as `owner/action@*`
+- `skip-approval-workflow-pr`: when `true`, do not open a pull request to add
+  `.github/workflows/approve-auto-maintenance-prs.yml`
+- `overwrite-approval-workflow-pr`: when `true`, open a pull request to replace
+  an existing `.github/workflows/approve-auto-maintenance-prs.yml`
 
 GitHub's documented API does not expose settings for:
 
