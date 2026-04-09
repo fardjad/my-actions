@@ -18,7 +18,11 @@ or a multi-line string that starts with a shebang line.
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------ |
 | source-branch            | The branch to create the PR with changes from.                                                                                                                        | No       | <pre>automatic-bun-update</pre>                        |
 | target-branch            | The branch to merge the changes into. Defaults to `github.head_ref` or `github.ref_name`.                                                                             | No       | <pre>${{ github.head_ref \|\| github.ref_name }}</pre> |
-| github-token             | The GitHub PAT to use for creating, approving, and merging the PR with the changes.                                                                                   | Yes      | <pre></pre>                                            |
+| github-token             | The GitHub token to use for creating, approving, and merging the PR with the changes.                                                                                 | No       | <pre>${{ github.token }}</pre>                         |
+| approve-pr               | Whether to approve the pull request before merging it. This should only be enabled when the approval identity is different from the pull request author.              | No       | <pre>true</pre>                                        |
+| merge-pr                 | Whether to merge the pull request after creating it.                                                                                                                  | No       | <pre>true</pre>                                        |
+| approve-token            | Optional GitHub token to use for approving the pull request. Defaults to `github-token` when omitted.                                                                 | No       | <pre></pre>                                            |
+| merge-token              | Optional GitHub token to use for merging the pull request. Defaults to `github-token` when omitted.                                                                   | No       | <pre></pre>                                            |
 | upgrade-options          | The options to pass to `bun update`. This value is appended verbatim to the command so it can include flags such as `--latest`, `--production`, or package selectors. | No       | <pre>--latest</pre>                                    |
 | minimum-release-age-days | The minimum age, in days, that a package version must reach before Bun can install or update it.                                                                      | No       | <pre>7</pre>                                           |
 | post-update-commands     | The commands to run after updating the dependencies. They will be executed in a bash shell.                                                                           | No       | <pre>bun audit \|\| true<br></pre>                     |
@@ -57,6 +61,5 @@ jobs:
             ${{ runner.os }}-bun-
       - uses: fardjad/my-actions/automatic-bun-update@main
         with:
-          github-token: ${{ secrets.GH_PAT }}
           upgrade-options: --latest --no-progress
 ```

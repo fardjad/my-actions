@@ -60,13 +60,13 @@ inputs:
   github-token:
     description: >-
       The GitHub token to use for creating the PR and, by default, merging it.
-    required: true
+    default: ${{ github.token }}
   approve-pr:
     description: >-
       Whether to approve the pull request before merging it. This should only
       be enabled when the approval identity is different from the pull request
       author.
-    default: "false"
+    default: "true"
   merge-pr:
     description: "Whether to merge the pull request after creating it."
     default: "true"
