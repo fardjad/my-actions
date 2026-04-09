@@ -16,6 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@main
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@main
+        with:
+          app-id: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
       - uses: fardjad/my-actions/configure-git@main
       - name: reset-branches
         run: |
@@ -41,8 +47,7 @@ jobs:
           echo "commit-sha=${COMMIT_SHA}" >> "${GITHUB_OUTPUT}"
       - uses: fardjad/my-actions/merge-commits@main
         with:
-          github-token: ${{ github.token }}
-          approve-pr: "false"
+          github-token: ${{ steps.app-token.outputs.token }}
           source-branch: "${{ env.TEST_SOURCE_BRANCH }}"
           target-branch: "${{ env.TEST_TARGET_BRANCH }}"
       - name: test-merge-commits

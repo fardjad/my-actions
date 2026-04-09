@@ -43,9 +43,17 @@ Then:
 1. Generate a private key for the app.
 2. Install the app on the repositories that should use these actions.
 3. Store the app ID in a repository or organization variable such as
-   `vars.APP_ID`.
+   `vars.AUTO_MAINTENANCE_APP_ID`.
 4. Store the app private key PEM in a repository or organization secret such as
-   `secrets.APP_PRIVATE_KEY`.
+   `secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY`.
+
+To use the `prepare-repo` workflow in this repository, add these extra GitHub
+App repository permissions on top of the permissions needed for PR creation and
+merge:
+
+- `Administration: Read and write`
+- `Secrets: Read and write`
+- `Variables: Read and write`
 
 ### 2. Use the App in Update Workflows
 
@@ -71,8 +79,8 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@main
         with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
       - uses: oven-sh/setup-bun@main
         with:
           bun-version: latest
@@ -107,17 +115,80 @@ permissions:
 
 jobs:
   approve:
-    if: >
-      github.event.pull_request.user.login == 'your-app-slug[bot]' &&
-      github.event.pull_request.user.type == 'Bot'
     runs-on: ubuntu-latest
     steps:
+      - name: Resolve app slug
+        id: app-token
+        uses: actions/create-github-app-token@main
+        with:
+          app-id: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
       - name: Approve PR
+        if: >
+          github.event.pull_request.user.login == format('{0}[bot]', steps.app-token.outputs.app-slug) &&
+          github.event.pull_request.user.type == 'Bot'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: gh pr review --approve "$PR_URL"
 ```
+
+### 3a. Repository Preparation Workflow
+
+This repository includes a helper workflow at
+[`.github/workflows/prepare-repo.yml`](.github/workflows/prepare-repo.yml)
+that prepares a target repository using the GitHub App stored in
+`AUTO_MAINTENANCE_APP_ID` and `AUTO_MAINTENANCE_APP_PRIVATE_KEY`.
+
+The same logic is also available as a standalone CLI:
+
+```bash
+python3 scripts/prepare-repo.py --help
+```
+
+Local example:
+
+```bash
+export GH_TOKEN=your-admin-token
+export SOURCE_APP_ID=123456
+export SOURCE_APP_PRIVATE_KEY="$(cat path/to/auto-maintenance-app.pem)"
+
+python3 scripts/prepare-repo.py \
+  fardjad/node-parse-my-command \
+  --default-branch main \
+  --required-status-checks "test,lint"
+```
+
+The CLI uses your current `gh` authentication or `GH_TOKEN` for GitHub API
+calls, and it copies `SOURCE_APP_ID` / `SOURCE_APP_PRIVATE_KEY` into the target
+repository as `AUTO_MAINTENANCE_APP_ID` and
+`AUTO_MAINTENANCE_APP_PRIVATE_KEY`.
+
+It configures:
+
+- rebase merge only
+- auto-merge
+- automatic branch deletion on merge
+- branch protection on the selected branch
+- Actions permissions, including write-enabled `GITHUB_TOKEN` and PR approval
+- repository `AUTO_MAINTENANCE_APP_ID` and
+  `AUTO_MAINTENANCE_APP_PRIVATE_KEY`
+
+Workflow inputs:
+
+- `repository`: target repository in `owner/repo` form
+- `default-branch`: protected branch name, defaults to `main`
+- `required-status-checks`: comma-separated check names; when omitted, the
+  workflow leaves required status checks unmanaged
+- `extra-allowed-actions-patterns`: comma-separated additional allowed action or
+  reusable workflow patterns such as `owner/action@*`
+
+GitHub's documented API does not expose settings for:
+
+- including Git LFS objects in archives
+- auto-closing issues with merged linked pull requests
+
+Those two settings still need to be managed manually.
 
 ### 4. Merge After Checks Pass
 

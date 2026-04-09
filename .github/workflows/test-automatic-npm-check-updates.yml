@@ -16,6 +16,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@main
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@main
+        with:
+          app-id: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
       - uses: actions/setup-node@main
         with:
           node-version: "lts/*"
@@ -51,7 +57,7 @@ jobs:
         with:
           source-branch: ${{ env.TEST_SOURCE_BRANCH }}
           target-branch: ${{ env.TEST_TARGET_BRANCH }}
-          github-token: ${{ secrets.GH_PAT }}
+          github-token: ${{ steps.app-token.outputs.token }}
           minimum-release-age-days: ${{ env.TEST_MINIMUM_RELEASE_AGE_DAYS }}
       - name: Assertion
         shell: bash

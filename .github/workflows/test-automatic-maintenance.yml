@@ -21,6 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@main
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@main
+        with:
+          app-id: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
       - uses: fardjad/my-actions/configure-git@main
       - name: Setup
         run: |
@@ -70,8 +76,7 @@ jobs:
             touch "${{ env.TEST_COMMIT_FILE }}"
             exit 0
           target-branch: ${{ env.TEST_TARGET_BRANCH }}
-          github-token: ${{ github.token }}
-          approve-pr: "false"
+          github-token: ${{ steps.app-token.outputs.token }}
       - name: Assertion
         shell: bash
         run: |
