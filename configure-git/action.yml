@@ -4,10 +4,10 @@ author: "Fardjad Davari"
 inputs:
   username:
     description: "The username to use for configuring git."
-    default: "github-actions[bot]"
+    default: "auto-maintenance[bot]"
   email:
     description: "The email to use for configuring git."
-    default: "github-actions[bot]@users.noreply.github.com"
+    default: "auto-maintenance[bot]@users.noreply.github.com"
 outputs: {}
 runs:
   using: "composite"
