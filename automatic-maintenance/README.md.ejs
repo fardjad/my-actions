@@ -69,6 +69,10 @@ action to create your own custom action. The building blocks are:
 
 ## Example Usage
 
+These actions are documented for GitHub App usage. Generate an installation
+token in the workflow and pass it as `github-token`. Approval should be handled
+in a separate `pull_request_target` workflow in the repository.
+
 Suppose we want to automatically update the version of Node.js in the
 [`.nvmrc`](https://github.com/nvm-sh/nvm#nvmrc) file located in the root of the
 repository (this is just a contrived example). Here's an example workflow to do
@@ -85,8 +89,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@main
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@main
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - uses: fardjad/my-actions/automatic-maintenance@main
         with:
+          github-token: ${{ steps.app-token.outputs.token }}
           prepare-script: |
             #!/usr/bin/env bash
 
@@ -129,5 +140,4 @@ jobs:
 
             From ${old_version} to ${new_version}
             EOF
-          approve-pr: "false"
 ```

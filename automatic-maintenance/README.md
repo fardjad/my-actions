@@ -58,10 +58,7 @@ or a multi-line string that starts with a shebang line.
 | commit-script  | The script to run to commit the changes. By default, it adds all the modified files to the git index and commits them with a default message.                                                                                             | No       | <pre>#!/usr/bin/env bash<br>set -euo pipefail<br><br>git add -u .<br>git commit -m "Perform automatic maintenance tasks" \|\| true<br></pre> |
 | target-branch  | The branch to merge the changes into. Defaults to `github.head_ref` or `github.ref_name`.                                                                                                                                                 | No       | <pre>${{ github.head_ref \|\| github.ref_name }}</pre>                                                                                       |
 | github-token   | The GitHub token to use for creating the PR and, by default, merging it.                                                                                                                                                                  | No       | <pre>${{ github.token }}</pre>                                                                                                               |
-| approve-pr     | Whether to approve the pull request before merging it. This should only be enabled when the approval identity is different from the pull request author.                                                                                  | No       | <pre>true</pre>                                                                                                                              |
-| merge-pr       | Whether to merge the pull request after creating it.                                                                                                                                                                                      | No       | <pre>true</pre>                                                                                                                              |
-| approve-token  | Optional GitHub token to use for approving the pull request. Defaults to `github-token` when omitted.                                                                                                                                     | No       | <pre></pre>                                                                                                                                  |
-| merge-token    | Optional GitHub token to use for merging the pull request. Defaults to `github-token` when omitted.                                                                                                                                       | No       | <pre></pre>                                                                                                                                  |
+| merge-pr       | Whether to merge the pull request after creating it. This first attempts an immediate merge and falls back to enabling auto-merge if GitHub rejects the immediate merge.                                                                  | No       | <pre>true</pre>                                                                                                                              |
 
 ## Building Blocks
 
@@ -74,6 +71,10 @@ action to create your own custom action. The building blocks are:
 - [merge-commits](../merge-commits)
 
 ## Example Usage
+
+These actions are documented for GitHub App usage. Generate an installation
+token in the workflow and pass it as `github-token`. Approval should be handled
+in a separate `pull_request_target` workflow in the repository.
 
 Suppose we want to automatically update the version of Node.js in the
 [`.nvmrc`](https://github.com/nvm-sh/nvm#nvmrc) file located in the root of the
@@ -91,8 +92,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@main
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@main
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - uses: fardjad/my-actions/automatic-maintenance@main
         with:
+          github-token: ${{ steps.app-token.outputs.token }}
           prepare-script: |
             #!/usr/bin/env bash
 
@@ -135,5 +143,4 @@ jobs:
 
             From ${old_version} to ${new_version}
             EOF
-          approve-pr: "false"
 ```

@@ -1,7 +1,7 @@
 name: "Merge Commits"
 description: >-
   This action merges commits from a source branch into a target branch by
-  creating a pull request and optionally approving it before merging.
+  creating a pull request and optionally merging it.
 author: "Fardjad Davari"
 inputs:
   source-branch:
@@ -15,25 +15,12 @@ inputs:
       The GitHub token to use for creating the pull request and, by default,
       merging it.
     default: ${{ github.token }}
-  approve-pr:
-    description: >-
-      Whether to approve the pull request before merging it. This should only
-      be enabled when the approval identity is different from the pull request
-      author.
-    default: "true"
   merge-pr:
-    description: "Whether to merge the pull request after creating it."
+    description: >-
+      Whether to merge the pull request after creating it. This first attempts
+      an immediate merge and falls back to enabling auto-merge if GitHub
+      rejects the immediate merge.
     default: "true"
-  approve-token:
-    description: >-
-      Optional GitHub token to use for approving the pull request. Defaults to
-      `github-token` when omitted.
-    default: ""
-  merge-token:
-    description: >-
-      Optional GitHub token to use for merging the pull request. Defaults to
-      `github-token` when omitted.
-    default: ""
 outputs: {}
 runs:
   using: "composite"
@@ -54,27 +41,17 @@ runs:
         echo "pr-url=${PR_URL}" >> $GITHUB_OUTPUT
       env:
         GH_TOKEN: ${{ inputs.github-token }}
-    - id: approve-and-merge-pr
+    - id: merge-pr
       if: steps.create-pr.outputs.pr-url
       shell: bash
       run: |
-        APPROVE_TOKEN="${INPUT_APPROVE_TOKEN:-$INPUT_GITHUB_TOKEN}"
-        MERGE_TOKEN="${INPUT_MERGE_TOKEN:-$INPUT_GITHUB_TOKEN}"
-
-        if [ "${INPUT_APPROVE_PR}" == "true" ]; then
-          GH_TOKEN="${APPROVE_TOKEN}" gh pr review --approve "${PR_URL}"
-        fi
-
         if [ "${INPUT_MERGE_PR}" == "true" ]; then
-          if ! GH_TOKEN="${MERGE_TOKEN}" gh pr merge --delete-branch --rebase "${PR_URL}"; then
+          if ! GH_TOKEN="${INPUT_GITHUB_TOKEN}" gh pr merge --delete-branch --rebase "${PR_URL}"; then
             echo "::notice::Immediate merge failed; attempting auto-merge instead."
-            GH_TOKEN="${MERGE_TOKEN}" gh pr merge --auto --delete-branch --rebase "${PR_URL}"
+            GH_TOKEN="${INPUT_GITHUB_TOKEN}" gh pr merge --auto --delete-branch --rebase "${PR_URL}"
           fi
         fi
       env:
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
-        INPUT_APPROVE_PR: ${{ inputs.approve-pr }}
         INPUT_MERGE_PR: ${{ inputs.merge-pr }}
-        INPUT_APPROVE_TOKEN: ${{ inputs.approve-token }}
-        INPUT_MERGE_TOKEN: ${{ inputs.merge-token }}
         PR_URL: ${{ steps.create-pr.outputs.pr-url }}

@@ -32,6 +32,10 @@ block](../automatic-maintenance) directly or use
 
 ## Example Usage
 
+These actions are documented for GitHub App usage. Generate an installation
+token in the workflow and pass it as `github-token`. Approval should be handled
+in a separate `pull_request_target` workflow in the repository.
+
 ```yaml
 name: update-dependencies
 
@@ -43,6 +47,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@main
+      - name: Generate app token
+        id: app-token
+        uses: actions/create-github-app-token@main
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - uses: actions/setup-node@main
         with:
           node-version: "lts/*"
@@ -59,4 +69,6 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
       - uses: fardjad/my-actions/automatic-npm-check-updates@main
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
 ```

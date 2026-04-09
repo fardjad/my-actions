@@ -61,25 +61,12 @@ inputs:
     description: >-
       The GitHub token to use for creating the PR and, by default, merging it.
     default: ${{ github.token }}
-  approve-pr:
-    description: >-
-      Whether to approve the pull request before merging it. This should only
-      be enabled when the approval identity is different from the pull request
-      author.
-    default: "true"
   merge-pr:
-    description: "Whether to merge the pull request after creating it."
+    description: >-
+      Whether to merge the pull request after creating it. This first attempts
+      an immediate merge and falls back to enabling auto-merge if GitHub
+      rejects the immediate merge.
     default: "true"
-  approve-token:
-    description: >-
-      Optional GitHub token to use for approving the pull request. Defaults to
-      `github-token` when omitted.
-    default: ""
-  merge-token:
-    description: >-
-      Optional GitHub token to use for merging the pull request. Defaults to
-      `github-token` when omitted.
-    default: ""
 outputs: {}
 runs:
   using: "composite"
@@ -149,9 +136,6 @@ runs:
       uses: fardjad/my-actions/merge-commits@main
       with:
         github-token: ${{ inputs.github-token }}
-        approve-pr: ${{ inputs.approve-pr }}
         merge-pr: ${{ inputs.merge-pr }}
-        approve-token: ${{ inputs.approve-token }}
-        merge-token: ${{ inputs.merge-token }}
         source-branch: ${{ inputs.source-branch }}
         target-branch: ${{ inputs.target-branch }}
