@@ -8,6 +8,10 @@ By default, this action upgrades the dependencies in the `package.json` file
 with `bun update --latest` and merges the changes to the target branch with a
 commit message that includes the upgraded packages. Versions newer than the
 configured minimum release age are ignored during update and install steps.
+Set `working-directory` to update an independent Bun package project in a
+subdirectory.
+Package lifecycle scripts are disabled during dependency updates by default.
+Set `run-package-scripts` to `true` to allow them.
 
 ## Inputs
 
@@ -22,6 +26,8 @@ or a multi-line string that starts with a shebang line.
 | merge-pr                 | Whether to merge the pull request after creating it. This first attempts an immediate merge and falls back to enabling auto-merge if GitHub rejects the immediate merge. | No       | <pre>true</pre>                                        |
 | upgrade-options          | The options to pass to `bun update`. This value is appended verbatim to the command so it can include flags such as `--latest`, `--production`, or package selectors.    | No       | <pre>--latest</pre>                                    |
 | minimum-release-age-days | The minimum age, in days, that a package version must reach before Bun can install or update it.                                                                         | No       | <pre>7</pre>                                           |
+| working-directory        | The package project directory to update, relative to the repository root. Use "." for the repository root.                                                               | No       | <pre>.</pre>                                           |
+| run-package-scripts      | Whether to allow package lifecycle scripts while updating dependencies.                                                                                                  | No       | <pre>false</pre>                                       |
 | post-update-commands     | The commands to run after updating the dependencies. They will be executed in a bash shell.                                                                              | No       | <pre>bun audit \|\| true<br></pre>                     |
 | verify-script            | The script to run to verify the changes. This could be used to run tests, etc.                                                                                           | No       | <pre>bun run test<br></pre>                            |
 | commit-title             | The commit title.                                                                                                                                                        | No       | <pre>Upgrade dependencies</pre>                        |
@@ -69,5 +75,17 @@ jobs:
       - uses: fardjad/my-actions/automatic-bun-update@main
         with:
           github-token: ${{ steps.app-token.outputs.token }}
-          upgrade-options: --latest --no-progress
+          upgrade-options: --latest
+```
+
+To update a package project in a subdirectory, call the action with a separate
+`source-branch` and set `working-directory`:
+
+```yaml
+- uses: fardjad/my-actions/automatic-bun-update@main
+  with:
+    source-branch: automatic-bun-update-opencode-plugin
+    github-token: ${{ steps.app-token.outputs.token }}
+    working-directory: opencode-plugin
+    upgrade-options: --latest
 ```

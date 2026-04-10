@@ -1,0 +1,8 @@
+{
+  "name": "js-maintenance-utils",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "js-maintenance-utils": "./cli.mjs"
+  }
+}

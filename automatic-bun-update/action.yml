@@ -33,6 +33,15 @@ inputs:
       The minimum age, in days, that a package version must reach before Bun
       can install or update it.
     default: "7"
+  working-directory:
+    description: >-
+      The package project directory to update, relative to the repository root.
+      Use "." for the repository root.
+    default: "."
+  run-package-scripts:
+    description: >-
+      Whether to allow package lifecycle scripts while updating dependencies.
+    default: "false"
   post-update-commands:
     description: >-
       The commands to run after updating the dependencies. They will be
@@ -58,6 +67,8 @@ runs:
         command -v bun >/dev/null || exit 1
     - name: Automatic maintenance
       uses: fardjad/my-actions/automatic-maintenance@main
+      env:
+        AUTOMATIC_UPDATE_WORKING_DIRECTORY: ${{ inputs.working-directory }}
       with:
         source-branch: ${{ inputs.source-branch }}
         target-branch: ${{ inputs.target-branch }}
@@ -67,6 +78,7 @@ runs:
           #!/usr/bin/env bash
 
           set -euo pipefail
+          utils="${{ github.action_path }}/../js-maintenance-utils/cli.mjs"
 
           minimum_release_age_days="${{ inputs.minimum-release-age-days }}"
           bunfig_dir="${{ runner.temp }}/automatic-bun-update-bunfig"
@@ -77,11 +89,13 @@ runs:
             > "${bunfig_dir}/.bunfig.toml"
           export XDG_CONFIG_HOME="${bunfig_dir}"
 
-          bun "${{ github.action_path }}/scripts/check-updates.mjs" "${{ github.workspace }}" "${{ inputs.upgrade-options }}"
+          bun "${utils}" resolve "${{ github.workspace }}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}" >/dev/null
+          bun "${{ github.action_path }}/scripts/check-updates.mjs" "${{ github.workspace }}" "${{ inputs.upgrade-options }}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}" "${{ inputs.run-package-scripts }}"
         change-script: |
           #!/usr/bin/env bash
 
           set -euo pipefail
+          utils="${{ github.action_path }}/../js-maintenance-utils/cli.mjs"
 
           minimum_release_age_days="${{ inputs.minimum-release-age-days }}"
           bunfig_dir="${{ runner.temp }}/automatic-bun-update-bunfig"
@@ -94,20 +108,37 @@ runs:
 
           snapshot_dir="${{ runner.temp }}/automatic-bun-update-before"
           rm -rf "${snapshot_dir}"
-          bun "${{ github.action_path }}/scripts/snapshot-manifests.mjs" "${{ github.workspace }}" "${snapshot_dir}"
+          package_dir="$(bun "${utils}" resolve "${{ github.workspace }}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}")"
+          bun "${utils}" snapshot "${{ github.workspace }}" "${snapshot_dir}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}" --lockfiles=bun.lock,bun.lockb
 
-          bun update ${{ inputs.upgrade-options }}
+          pushd "${package_dir}"
+          package_script_options=()
+          if [ "${{ inputs.run-package-scripts }}" != "true" ]; then
+            package_script_options+=(--ignore-scripts)
+          fi
+
+          bun update "${package_script_options[@]}" ${{ inputs.upgrade-options }}
 
           ${{ inputs.post-update-commands }}
-        verify-script: ${{ inputs.verify-script }}
+          popd
+        verify-script: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+          utils="${{ github.action_path }}/../js-maintenance-utils/cli.mjs"
+          package_dir="$(bun "${utils}" resolve "${{ github.workspace }}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}")"
+
+          pushd "${package_dir}"
+          ${{ inputs.verify-script }}
+          popd
         commit-script: |
           #!/usr/bin/env bash
 
           set -euo pipefail
+          utils="${{ github.action_path }}/../js-maintenance-utils/cli.mjs"
 
-          git add -u .
-          git add bun.lock bun.lockb 2>/dev/null || true
-          update_summary="$(bun "${{ github.action_path }}/scripts/render-update-summary.mjs" "${{ runner.temp }}/automatic-bun-update-before" "${{ github.workspace }}")"
+          bun "${utils}" stage "${{ github.workspace }}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}" --lockfiles=bun.lock,bun.lockb --add-lockfiles=always
+          update_summary="$(bun "${utils}" summary "${{ runner.temp }}/automatic-bun-update-before" "${{ github.workspace }}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}" --lockfiles=bun.lock,bun.lockb)"
           cat <<COMMIT_SCRIPT_EOF | git commit -F -
           ${{ inputs.commit-title }}
 

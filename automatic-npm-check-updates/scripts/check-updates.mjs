@@ -1,11 +1,12 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
+import childProcess from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
-  collectInputPaths,
   collectDependencyChanges,
+  collectInputPaths,
   collectSnapshotPaths,
   copyRelativeFiles,
   findChangedFiles,
@@ -13,25 +14,42 @@ import {
 } from "../../js-maintenance-utils/lib.mjs";
 
 const workspaceDir = process.argv[2] ?? process.cwd();
-const upgradeOptions = process.argv[3] ?? "--latest";
+const minimumReleaseAgeDays = process.argv[3] ?? "7";
 const workingDirectory = process.argv[4] ?? ".";
 const runPackageScripts = process.argv[5] === "true";
-const lockfiles = ["bun.lock", "bun.lockb"];
+const lockfiles = ["package-lock.json"];
 const packageDirectory = resolvePackageDirectory(
   workspaceDir,
   workingDirectory,
 );
 const projectDir = packageDirectory.absolute;
 const tempRoot = await fs.mkdtemp(
-  path.join(os.tmpdir(), "automatic-bun-update-check-"),
+  path.join(os.tmpdir(), "automatic-npm-check-updates-check-"),
 );
 const projectRelativePath =
   packageDirectory.relative === "." ? "" : packageDirectory.relative;
 const tempProjectDir = path.join(tempRoot, projectRelativePath);
 
+const run = (command) => {
+  const env = {
+    ...process.env,
+    npm_config_min_release_age: minimumReleaseAgeDays,
+  };
+
+  if (!runPackageScripts) {
+    env.npm_config_ignore_scripts = "true";
+  }
+
+  childProcess.execFileSync("bash", ["-lc", command], {
+    cwd: tempProjectDir,
+    env,
+    stdio: "inherit",
+  });
+};
+
 try {
   const inputPaths = await collectInputPaths({
-    configFiles: ["bunfig.toml", ".npmrc"],
+    configFiles: [".npmrc"],
     lockfiles,
     projectDir,
     workspace: packageDirectory.workspace,
@@ -39,18 +57,11 @@ try {
   await copyRelativeFiles(packageDirectory.workspace, tempRoot, inputPaths);
   await fs.mkdir(tempProjectDir, { recursive: true });
 
-  const packageScriptOptions = runPackageScripts ? "" : "--ignore-scripts ";
-  const updateCommand = `set -euo pipefail\nbun update ${packageScriptOptions}${upgradeOptions}`;
-  const subprocess = Bun.spawn(["bash", "-lc", updateCommand], {
-    cwd: tempProjectDir,
-    stderr: "inherit",
-    stdout: "inherit",
-  });
-
-  const exitCode = await subprocess.exited;
-  if (exitCode !== 0) {
-    process.exit(exitCode);
-  }
+  const packageScriptOptions = runPackageScripts ? "" : " --ignore-scripts";
+  run(
+    `npm install --min-release-age="${minimumReleaseAgeDays}"${packageScriptOptions}`,
+  );
+  run(`npm-check-updates --cooldown "${minimumReleaseAgeDays}d" -u`);
 
   const beforeSnapshotPaths = await collectSnapshotPaths({
     lockfiles,
@@ -97,16 +108,10 @@ try {
     relativePaths,
   );
 
-  const hadExistingLockfile =
-    beforeSnapshotPaths.includes(path.join(projectRelativePath, "bun.lock")) ||
-    beforeSnapshotPaths.includes(path.join(projectRelativePath, "bun.lockb"));
+  const lockfilePath = path.join(projectRelativePath, "package-lock.json");
   const hasLockfileChanges =
-    hadExistingLockfile &&
-    changedFiles.some(
-      (relativePath) =>
-        relativePath === path.join(projectRelativePath, "bun.lock") ||
-        relativePath === path.join(projectRelativePath, "bun.lockb"),
-    );
+    beforeSnapshotPaths.includes(lockfilePath) &&
+    changedFiles.includes(lockfilePath);
 
   if (!hasLockfileChanges) {
     process.exit(0);

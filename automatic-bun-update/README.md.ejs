@@ -15,6 +15,10 @@ By default, this action upgrades the dependencies in the `package.json` file
 with `bun update --latest` and merges the changes to the target branch with a
 commit message that includes the upgraded packages. Versions newer than the
 configured minimum release age are ignored during update and install steps.
+Set `working-directory` to update an independent Bun package project in a
+subdirectory.
+Package lifecycle scripts are disabled during dependency updates by default.
+Set `run-package-scripts` to `true` to allow them.
 
 ## Inputs
 
@@ -66,5 +70,17 @@ jobs:
       - uses: fardjad/my-actions/automatic-bun-update@main
         with:
           github-token: ${{ steps.app-token.outputs.token }}
-          upgrade-options: --latest --no-progress
+          upgrade-options: --latest
+```
+
+To update a package project in a subdirectory, call the action with a separate
+`source-branch` and set `working-directory`:
+
+```yaml
+      - uses: fardjad/my-actions/automatic-bun-update@main
+        with:
+          source-branch: automatic-bun-update-opencode-plugin
+          github-token: ${{ steps.app-token.outputs.token }}
+          working-directory: opencode-plugin
+          upgrade-options: --latest
 ```

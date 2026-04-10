@@ -27,6 +27,15 @@ inputs:
       The minimum age, in days, that a package version must reach before npm
       can install it or npm-check-updates can select it.
     default: 7
+  working-directory:
+    description: >-
+      The package project directory to update, relative to the repository root.
+      Use "." for the repository root.
+    default: "."
+  run-package-scripts:
+    description: >-
+      Whether to allow package lifecycle scripts while updating dependencies.
+    default: "false"
   post-update-commands:
     description: >-
       The commands to run after updating the dependencies. They will be 
@@ -56,6 +65,8 @@ runs:
         done
     - name: Automatic maintenance
       uses: fardjad/my-actions/automatic-maintenance@main
+      env:
+        AUTOMATIC_UPDATE_WORKING_DIRECTORY: ${{ inputs.working-directory }}
       with:
         source-branch: ${{ inputs.source-branch }}
         target-branch: ${{ inputs.target-branch }}
@@ -67,12 +78,6 @@ runs:
 
           set -euo pipefail
 
-          pushd "${{ github.action_path }}/node-commit-message-preprocessor"
-          npm install
-          npm link
-          popd
-          command -v commit-message-preprocessor >/dev/null || exit 1
-
           npm install -g npm-check-updates
           command -v ncu >/dev/null || exit 1
         check-script: |
@@ -81,31 +86,54 @@ runs:
           set -euo pipefail
 
           minimum_release_age_days="${{ inputs.minimum-release-age-days }}"
-          export npm_config_min_release_age="${minimum_release_age_days}"
-
-          npm-check-updates --cooldown "${minimum_release_age_days}d" --errorLevel 2
+          node "${{ github.action_path }}/scripts/check-updates.mjs" "${{ github.workspace }}" "${minimum_release_age_days}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}" "${{ inputs.run-package-scripts }}"
         change-script: |
           #!/usr/bin/env bash
 
           set -euo pipefail
+          utils="${{ github.action_path }}/../js-maintenance-utils/cli.mjs"
 
           minimum_release_age_days="${{ inputs.minimum-release-age-days }}"
           export npm_config_min_release_age="${minimum_release_age_days}"
 
-          npm install --min-release-age="${minimum_release_age_days}"
+          snapshot_dir="${{ runner.temp }}/automatic-npm-check-updates-before"
+          rm -rf "${snapshot_dir}"
+          node "${utils}" snapshot "${{ github.workspace }}" "${snapshot_dir}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}" --lockfiles=package-lock.json
 
-          npm-check-updates --cooldown "${minimum_release_age_days}d" -u --jsonUpgraded > "${{ runner.temp }}/upgraded.json"
+          package_dir="$(node "${utils}" resolve "${{ github.workspace }}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}")"
+          pushd "${package_dir}"
+          package_script_options=()
+          if [ "${{ inputs.run-package-scripts }}" != "true" ]; then
+            package_script_options+=(--ignore-scripts)
+            export npm_config_ignore_scripts=true
+          fi
+
+          npm install --min-release-age="${minimum_release_age_days}" "${package_script_options[@]}"
+
+          npm-check-updates --cooldown "${minimum_release_age_days}d" -u
 
           ${{ inputs.post-update-commands }}
-        verify-script: ${{ inputs.verify-script }}
+          popd
+        verify-script: |
+          #!/usr/bin/env bash
+
+          set -euo pipefail
+          utils="${{ github.action_path }}/../js-maintenance-utils/cli.mjs"
+          package_dir="$(node "${utils}" resolve "${{ github.workspace }}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}")"
+
+          pushd "${package_dir}"
+          ${{ inputs.verify-script }}
+          popd
         commit-script: |
           #!/usr/bin/env bash
 
           set -euo pipefail
+          utils="${{ github.action_path }}/../js-maintenance-utils/cli.mjs"
 
-          git add -u .
-          cat <<COMMIT_SCRIPT_EOF | commit-message-preprocessor | git commit -F -
+          node "${utils}" stage "${{ github.workspace }}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}" --lockfiles=package-lock.json --add-lockfiles=subdirectory
+          update_summary="$(node "${utils}" summary "${{ runner.temp }}/automatic-npm-check-updates-before" "${{ github.workspace }}" "${AUTOMATIC_UPDATE_WORKING_DIRECTORY}" --lockfiles=package-lock.json)"
+          cat <<COMMIT_SCRIPT_EOF | git commit -F -
           ${{ inputs.commit-title }}
 
-          $(cat "${{ runner.temp }}/upgraded.json")
+          ${update_summary}
           COMMIT_SCRIPT_EOF

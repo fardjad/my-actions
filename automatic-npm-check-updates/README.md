@@ -8,6 +8,10 @@ By default, this action updates the dependencies in the `package.json` file
 and merges the changes to the target branch with a commit message that includes
 the list of updated packages. Versions newer than the configured minimum
 release age are ignored during both the update and install steps.
+Set `working-directory` to update an independent npm package project in a
+subdirectory.
+Package lifecycle scripts are disabled during dependency updates by default.
+Set `run-package-scripts` to `true` to allow them.
 
 ## Inputs
 
@@ -21,6 +25,8 @@ or a multi-line string that starts with a shebang line.
 | github-token             | The GitHub token to use for creating and merging the PR with the changes.                                                                                                | No       | <pre>${{ github.token }}</pre>                                                                                       |
 | merge-pr                 | Whether to merge the pull request after creating it. This first attempts an immediate merge and falls back to enabling auto-merge if GitHub rejects the immediate merge. | No       | <pre>true</pre>                                                                                                      |
 | minimum-release-age-days | The minimum age, in days, that a package version must reach before npm can install it or npm-check-updates can select it.                                                | No       | <pre>7</pre>                                                                                                         |
+| working-directory        | The package project directory to update, relative to the repository root. Use "." for the repository root.                                                               | No       | <pre>.</pre>                                                                                                         |
+| run-package-scripts      | Whether to allow package lifecycle scripts while updating dependencies.                                                                                                  | No       | <pre>false</pre>                                                                                                     |
 | post-update-commands     | The commands to run after updating the dependencies. They will be executed in a bash shell.                                                                              | No       | <pre>npm audit fix --quiet --no-progress --no-fund \|\| true<br><br>npm version patch --no-git-tag-version<br></pre> |
 | verify-script            | The script to run to verify the changes. This could be used to run tests, etc.                                                                                           | No       | <pre>npm run test<br></pre>                                                                                          |
 | commit-title             | The commit title.                                                                                                                                                        | No       | <pre>Upgrade dependencies</pre>                                                                                      |
@@ -73,4 +79,15 @@ jobs:
       - uses: fardjad/my-actions/automatic-npm-check-updates@main
         with:
           github-token: ${{ steps.app-token.outputs.token }}
+```
+
+To update a package project in a subdirectory, call the action with a separate
+`source-branch` and set `working-directory`:
+
+```yaml
+- uses: fardjad/my-actions/automatic-npm-check-updates@main
+  with:
+    source-branch: automatic-npm-check-updates-opencode-plugin
+    github-token: ${{ steps.app-token.outputs.token }}
+    working-directory: opencode-plugin
 ```

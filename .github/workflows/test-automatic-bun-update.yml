@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - "automatic-bun-update/**"
+      - "js-maintenance-utils/**"
 
 env:
   TEST_SOURCE_BRANCH: test-automatic-bun-update-source
@@ -48,6 +49,12 @@ jobs:
           target-branch: ${{ env.TEST_TARGET_BRANCH }}
           github-token: ${{ steps.app-token.outputs.token }}
           minimum-release-age-days: ${{ env.TEST_MINIMUM_RELEASE_AGE_DAYS }}
+      - name: Run helper tests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          node --test js-maintenance-utils/lib.test.mjs
       - name: Assertion
         shell: bash
         run: |
@@ -61,7 +68,7 @@ jobs:
             > "${bunfig_dir}/.bunfig.toml"
           export XDG_CONFIG_HOME="${bunfig_dir}"
 
-          bun automatic-bun-update/scripts/check-updates.mjs "${GITHUB_WORKSPACE}" "--latest"
+          bun automatic-bun-update/scripts/check-updates.mjs "${GITHUB_WORKSPACE}" "--latest" "."
       - name: Cleanup
         if: always()
         run: |
