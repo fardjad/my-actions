@@ -43,13 +43,18 @@ def run(
     capture_output: bool = True,
     check: bool = True,
 ) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        args,
-        input=input_text,
-        text=True,
-        check=check,
-        capture_output=capture_output,
-    )
+    try:
+        return subprocess.run(
+            args,
+            input=input_text,
+            text=True,
+            check=check,
+            capture_output=capture_output,
+        )
+    except subprocess.CalledProcessError as error:
+        if error.stderr:
+            print(error.stderr, file=sys.stderr, end="")
+        raise
 
 
 def gh_api(
