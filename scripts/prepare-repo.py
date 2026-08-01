@@ -669,12 +669,15 @@ def main(argv: list[str] | None = None) -> None:
         repo_owner_type=repo_owner_type,
         extra_allowed_patterns=config.extra_allowed_patterns,
     )
-    update_branch_protection(
-        config.target,
-        branch=config.default_branch,
-        force_push_login=config.force_push_login,
-        required_status_checks=config.required_status_checks,
-    )
+    if repo_visibility == "private":
+        print("Skipping branch protection: GitHub Pro or public visibility is required")
+    else:
+        update_branch_protection(
+            config.target,
+            branch=config.default_branch,
+            force_push_login=config.force_push_login,
+            required_status_checks=config.required_status_checks,
+        )
 
     print("Setting AUTO_MAINTENANCE_APP_CLIENT_ID repository variable")
     set_repo_variable(
