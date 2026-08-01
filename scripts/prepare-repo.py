@@ -535,12 +535,13 @@ def update_actions_settings(
         },
     )
 
-    print("Updating external contributor approval policy")
-    gh_api(
-        f"repos/{target.owner}/{target.name}/actions/permissions/fork-pr-contributor-approval",
-        method="PUT",
-        body={"approval_policy": "all_external_contributors"},
-    )
+    if repo_visibility == "public":
+        print("Updating external contributor approval policy")
+        gh_api(
+            f"repos/{target.owner}/{target.name}/actions/permissions/fork-pr-contributor-approval",
+            method="PUT",
+            body={"approval_policy": "all_external_contributors"},
+        )
 
 
 def update_branch_protection(

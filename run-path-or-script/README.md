@@ -15,12 +15,13 @@ A script is expected to start with a shebang line.
 
 ## Outputs
 
-| Output    | Description                                                                               |
-| --------- | ----------------------------------------------------------------------------------------- |
-| is-path   | Indicates whether the input was identified as a file path ("true") or a script ("false"). |
-| exit-code | The exit code returned by the executed script or file.                                    |
-| stdout    | The standard output produced by the executed script or file.                              |
-| stderr    | The standard error output from the executed script or file.                               |
+Output | Description
+
+- | -
+  is-path | Indicates whether the input was identified as a file path ("true") or a script ("false").
+  exit-code | The exit code returned by the executed script or file.
+  stdout | The standard output produced by the executed script or file.
+  stderr | The standard error output from the executed script or file.
 
 ## Example Usage
 
