@@ -16,9 +16,9 @@ jobs:
     steps:
       - name: Resolve app slug
         id: app-token
-        uses: actions/create-github-app-token@main
+        uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
+          client-id: ${{ vars.AUTO_MAINTENANCE_APP_CLIENT_ID }}
           private-key: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
       - name: Approve PR
         if: >

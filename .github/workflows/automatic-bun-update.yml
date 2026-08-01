@@ -12,9 +12,9 @@ jobs:
       - uses: actions/checkout@main
       - name: Generate app token
         id: app-token
-        uses: actions/create-github-app-token@main
+        uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
+          client-id: ${{ vars.AUTO_MAINTENANCE_APP_CLIENT_ID }}
           private-key: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
       - uses: oven-sh/setup-bun@main
         with:

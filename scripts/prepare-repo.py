@@ -337,7 +337,7 @@ class Config:
     target: TargetRepo
     default_branch: str
     force_push_login: str
-    source_app_id: str
+    source_app_client_id: str
     source_app_private_key: str
     extra_allowed_patterns: list[str]
     required_status_checks: list[str]
@@ -395,11 +395,20 @@ def build_argument_parser() -> argparse.ArgumentParser:
         help="Comma-separated additional allowed action or reusable workflow patterns.",
     )
     parser.add_argument(
+        "--source-app-client-id",
         "--source-app-id",
-        default=env_first("SOURCE_APP_ID", "AUTO_MAINTENANCE_APP_ID"),
+        dest="source_app_client_id",
+        default=env_first(
+            "SOURCE_APP_CLIENT_ID",
+            "AUTO_MAINTENANCE_APP_CLIENT_ID",
+            "SOURCE_APP_ID",
+            "AUTO_MAINTENANCE_APP_ID",
+        ),
         help=(
-            "App ID to copy into the target repository variable. "
-            "Defaults to SOURCE_APP_ID or AUTO_MAINTENANCE_APP_ID from the environment."
+            "GitHub App Client ID to copy into the target repository variable. "
+            "--source-app-id is retained for compatibility. Defaults to "
+            "SOURCE_APP_CLIENT_ID or AUTO_MAINTENANCE_APP_CLIENT_ID, with legacy "
+            "SOURCE_APP_ID or AUTO_MAINTENANCE_APP_ID as fallback."
         ),
     )
 
@@ -440,10 +449,12 @@ def parse_args(argv: list[str] | None = None) -> Config:
     parser = build_argument_parser()
     args = parser.parse_args(argv)
 
-    source_app_id = args.source_app_id.strip()
-    if not source_app_id:
+    source_app_client_id = args.source_app_client_id.strip()
+    if not source_app_client_id:
         parser.error(
-            "--source-app-id is required unless SOURCE_APP_ID or AUTO_MAINTENANCE_APP_ID is set"
+            "--source-app-client-id (or compatibility alias --source-app-id) is required "
+            "unless SOURCE_APP_CLIENT_ID or AUTO_MAINTENANCE_APP_CLIENT_ID is set "
+            "(legacy SOURCE_APP_ID and AUTO_MAINTENANCE_APP_ID are also accepted)"
         )
 
     source_app_private_key = args.source_app_private_key
@@ -465,7 +476,7 @@ def parse_args(argv: list[str] | None = None) -> Config:
         target=parse_target_repo(args.repository),
         default_branch=args.default_branch,
         force_push_login=args.force_push_login,
-        source_app_id=source_app_id,
+        source_app_client_id=source_app_client_id,
         source_app_private_key=source_app_private_key,
         extra_allowed_patterns=parse_csv_list(args.extra_allowed_actions_patterns),
         required_status_checks=parse_csv_list(args.required_status_checks),
@@ -660,8 +671,12 @@ def main(argv: list[str] | None = None) -> None:
         required_status_checks=config.required_status_checks,
     )
 
-    print("Setting AUTO_MAINTENANCE_APP_ID repository variable")
-    set_repo_variable(config.target.full_name, "AUTO_MAINTENANCE_APP_ID", config.source_app_id)
+    print("Setting AUTO_MAINTENANCE_APP_CLIENT_ID repository variable")
+    set_repo_variable(
+        config.target.full_name,
+        "AUTO_MAINTENANCE_APP_CLIENT_ID",
+        config.source_app_client_id,
+    )
 
     print("Setting AUTO_MAINTENANCE_APP_PRIVATE_KEY repository secret")
     set_repo_secret(
@@ -688,7 +703,7 @@ def main(argv: list[str] | None = None) -> None:
 - Auto-merge enabled
 - Head branch deletion on merge enabled
 - Actions policy set to selected actions and reusable workflows
-- `AUTO_MAINTENANCE_APP_ID` variable updated
+- `AUTO_MAINTENANCE_APP_CLIENT_ID` variable updated
 - `AUTO_MAINTENANCE_APP_PRIVATE_KEY` secret updated
 
 ### Required status checks

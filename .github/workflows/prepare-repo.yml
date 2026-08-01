@@ -54,16 +54,16 @@ jobs:
           echo "name=${name}" >> "${GITHUB_OUTPUT}"
       - name: Generate app token
         id: app-token
-        uses: actions/create-github-app-token@main
+        uses: actions/create-github-app-token@v3
         with:
-          app-id: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
+          client-id: ${{ vars.AUTO_MAINTENANCE_APP_CLIENT_ID }}
           private-key: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
           owner: ${{ steps.target.outputs.owner }}
           repositories: ${{ steps.target.outputs.name }}
       - name: Prepare repository
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          SOURCE_APP_ID: ${{ vars.AUTO_MAINTENANCE_APP_ID }}
+          SOURCE_APP_CLIENT_ID: ${{ vars.AUTO_MAINTENANCE_APP_CLIENT_ID }}
           SOURCE_APP_PRIVATE_KEY: ${{ secrets.AUTO_MAINTENANCE_APP_PRIVATE_KEY }}
         run: |
           set -euo pipefail
