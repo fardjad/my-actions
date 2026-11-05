@@ -12,7 +12,7 @@
   "author": "Fardjad Davari <public@fardjad.com>",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "ejs": "^7.0.2",
     "glob": "^14.0.3",
     "husky": "^9.1.7",
