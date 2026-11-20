@@ -14,10 +14,10 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "ejs": "^7.0.2",
-    "glob": "^14.0.5",
+    "glob": "^14.0.6",
     "husky": "^9.1.7",
     "nodemon": "^3.1.14",
-    "prettier": "^3.10.0",
+    "prettier": "^3.10.1",
     "yaml": "^2.9.1"
   }
 }
